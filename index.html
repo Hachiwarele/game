@@ -2,12 +2,13 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Simple Side Scroller</title>
+  <title>Side Scroller Game</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
       background: linear-gradient(#87CEEB, #1E90FF);
+      font-family: sans-serif;
     }
     #player {
       position: absolute;
@@ -25,47 +26,170 @@
       bottom: 0;
       left: 0;
     }
+    #ui {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: white;
+      font-size: 24px;
+      text-shadow: 2px 2px 4px black;
+    }
+    .obstacle {
+      position: absolute;
+      width: 40px;
+      height: 60px;
+      background: purple;
+      bottom: 100px;
+    }
+    #gameover {
+      position: absolute;
+      top: 40%;
+      width: 100%;
+      text-align: center;
+      font-size: 48px;
+      color: white;
+      text-shadow: 3px 3px 6px black;
+      display: none;
+    }
   </style>
 </head>
 <body>
+
   <div id="player"></div>
   <div id="ground"></div>
+  <div id="ui">距離: 0m</div>
+  <div id="gameover">GAME OVER</div>
 
   <script>
     const player = document.getElementById("player");
     const ground = document.getElementById("ground");
+    const ui = document.getElementById("ui");
+    const gameoverText = document.getElementById("gameover");
 
     let y = 100;
     let vy = 0;
     let gravity = 0.8;
     let onGround = true;
-    let scrollX = 0;
 
+    let scrollX = 0;
+    let distance = 0;
+
+    let obstacles = [];
+    let holes = [];
+
+    let moveLeft = false;
+    let moveRight = false;
+    let playerX = 100;
+
+    let gameOver = false;
+
+    // PC操作
     document.addEventListener("keydown", (e) => {
       if (e.code === "Space" && onGround) {
         vy = 15;
         onGround = false;
       }
+      if (e.code === "ArrowLeft") moveLeft = true;
+      if (e.code === "ArrowRight") moveRight = true;
+    });
+    document.addEventListener("keyup", (e) => {
+      if (e.code === "ArrowLeft") moveLeft = false;
+      if (e.code === "ArrowRight") moveRight = false;
     });
 
+    // スマホ操作
+    document.addEventListener("touchstart", (e) => {
+      const x = e.touches[0].clientX;
+      const width = window.innerWidth;
+
+      if (x < width * 0.33) moveLeft = true;
+      else if (x > width * 0.66) moveRight = true;
+      else if (onGround) {
+        vy = 15;
+        onGround = false;
+      }
+    });
+    document.addEventListener("touchend", () => {
+      moveLeft = false;
+      moveRight = false;
+    });
+
+    // 障害物生成
+    function spawnObstacle() {
+      const obs = document.createElement("div");
+      obs.className = "obstacle";
+      obs.style.left = "800px";
+      document.body.appendChild(obs);
+      obstacles.push(obs);
+    }
+
+    // 穴生成
+    function spawnHole() {
+      const holeX = 800;
+      const holeWidth = 150;
+      holes.push({ x: holeX, width: holeWidth });
+    }
+
+    setInterval(() => {
+      if (!gameOver) {
+        if (Math.random() < 0.5) spawnObstacle();
+        else spawnHole();
+      }
+    }, 2000);
+
     function loop() {
+      if (gameOver) return;
+
+      // 横移動
+      if (moveLeft) playerX -= 5;
+      if (moveRight) playerX += 5;
+      player.style.left = playerX + "px";
+
       // 重力
       vy -= gravity;
       y += vy;
 
-      // 地面に着地
-      if (y <= 100) {
-        y = 100;
-        vy = 0;
-        onGround = true;
+      // 穴判定
+      let onHole = false;
+      holes.forEach(h => {
+        if (playerX + 40 > h.x + scrollX && playerX < h.x + h.width + scrollX) {
+          onHole = true;
+        }
+      });
+
+      if (!onHole) {
+        if (y <= 100) {
+          y = 100;
+          vy = 0;
+          onGround = true;
+        }
       }
 
-      // プレイヤー位置更新
       player.style.bottom = y + "px";
 
       // スクロール
       scrollX -= 3;
       ground.style.left = scrollX + "px";
+
+      // 障害物移動 & 当たり判定
+      obstacles.forEach(obs => {
+        const x = parseInt(obs.style.left) - 3;
+        obs.style.left = x + "px";
+
+        const px = playerX;
+        const py = y;
+        const ox = x;
+        const oy = 100;
+
+        if (px < ox + 40 && px + 40 > ox && py < oy + 60 && py + 40 > oy) {
+          gameOver = true;
+          gameoverText.style.display = "block";
+        }
+      });
+
+      // 距離更新
+      distance += 0.1;
+      ui.textContent = `距離: ${distance.toFixed(1)}m`;
 
       requestAnimationFrame(loop);
     }
