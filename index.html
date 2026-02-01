@@ -54,6 +54,12 @@
       background: #654321;
       bottom: 0;
     }
+    .hole {
+      position: absolute;
+      height: 100px;
+      background: transparent;
+      bottom: 0;
+    }
     .obstacle {
       position: absolute;
       width: 40px;
@@ -103,11 +109,12 @@
     let gameOver = false;
 
     let grounds = [];
+    let holes = [];
     let obstacles = [];
     let airObstacles = [];
     let enemies = [];
 
-    // 無限床を作る
+    // 無限床
     function createGround(x) {
       const g = document.createElement("div");
       g.className = "ground";
@@ -152,7 +159,21 @@
       moveRight = false;
     });
 
-    // 障害物生成
+    // 穴（飛べる幅）
+    function spawnHole() {
+      const holeWidth = 80 + Math.random() * 70; // 80〜150px
+      const holeX = window.innerWidth + 400;
+
+      const h = document.createElement("div");
+      h.className = "hole";
+      h.style.left = holeX + "px";
+      h.style.width = holeWidth + "px";
+      document.body.appendChild(h);
+
+      holes.push(h);
+    }
+
+    // 障害物
     function spawnObstacle() {
       const obs = document.createElement("div");
       obs.className = "obstacle";
@@ -192,12 +213,6 @@
       if (distance > 50 && Math.random() < 0.4) spawnEnemy();
     }, 2000);
 
-    // 穴生成
-    function spawnHole() {
-      const g = createGround(window.innerWidth + 400);
-      g.style.background = "transparent";
-    }
-
     function loop() {
       if (gameOver) return;
 
@@ -212,14 +227,25 @@
 
       // 床判定
       let onFloor = false;
+
       grounds.forEach(g => {
         const gx = parseInt(g.style.left);
-        if (playerX + 40 > gx && playerX < gx + 400 && g.style.background !== "transparent") {
+        if (playerX + 40 > gx && playerX < gx + 400) {
           if (y <= 100) {
             y = 100;
             vy = 0;
             onFloor = true;
           }
+        }
+      });
+
+      // 穴判定
+      holes.forEach(h => {
+        const hx = parseInt(h.style.left);
+        const hw = parseInt(h.style.width);
+
+        if (playerX + 40 > hx && playerX < hx + hw) {
+          onFloor = false;
         }
       });
 
@@ -233,10 +259,13 @@
       grounds.forEach(g => {
         const x = parseInt(g.style.left) - 3;
         g.style.left = x + "px";
-        if (x < -400) {
-          g.style.left = window.innerWidth + "px";
-          g.style.background = "#654321";
-        }
+        if (x < -400) g.style.left = window.innerWidth + "px";
+      });
+
+      // 穴スクロール
+      holes.forEach(h => {
+        const x = parseInt(h.style.left) - 3;
+        h.style.left = x + "px";
       });
 
       // 障害物
