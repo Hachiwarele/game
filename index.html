@@ -41,15 +41,33 @@
       background: purple;
       bottom: 100px;
     }
+    .air-obstacle {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: orange;
+      bottom: 200px;
+    }
     #gameover {
       position: absolute;
-      top: 40%;
+      top: 35%;
       width: 100%;
       text-align: center;
       font-size: 48px;
       color: white;
       text-shadow: 3px 3px 6px black;
       display: none;
+    }
+    #retry {
+      position: absolute;
+      top: 55%;
+      width: 100%;
+      text-align: center;
+      display: none;
+    }
+    #retry button {
+      font-size: 24px;
+      padding: 10px 20px;
     }
   </style>
 </head>
@@ -58,13 +76,15 @@
   <div id="player"></div>
   <div id="ground"></div>
   <div id="ui">距離: 0m</div>
-  <div id="gameover">GAME OVER</div>
+  <div id="gameover"></div>
+  <div id="retry"><button onclick="location.reload()">リトライ</button></div>
 
   <script>
     const player = document.getElementById("player");
     const ground = document.getElementById("ground");
     const ui = document.getElementById("ui");
     const gameoverText = document.getElementById("gameover");
+    const retryBtn = document.getElementById("retry");
 
     let y = 100;
     let vy = 0;
@@ -75,6 +95,7 @@
     let distance = 0;
 
     let obstacles = [];
+    let airObstacles = [];
     let holes = [];
 
     let moveLeft = false;
@@ -114,25 +135,37 @@
       moveRight = false;
     });
 
-    // 障害物生成
+    // 障害物（地上）
     function spawnObstacle() {
       const obs = document.createElement("div");
       obs.className = "obstacle";
-      obs.style.left = "800px";
+      obs.style.left = window.innerWidth + "px";
       document.body.appendChild(obs);
       obstacles.push(obs);
     }
 
-    // 穴生成
+    // 空中障害物（ジャンプしたらアウト）
+    function spawnAirObstacle() {
+      const obs = document.createElement("div");
+      obs.className = "air-obstacle";
+      obs.style.left = window.innerWidth + "px";
+      document.body.appendChild(obs);
+      airObstacles.push(obs);
+    }
+
+    // 穴
     function spawnHole() {
-      const holeX = 800;
-      const holeWidth = 150;
+      const holeX = window.innerWidth;
+      const holeWidth = 200;
       holes.push({ x: holeX, width: holeWidth });
     }
 
+    // ランダム生成
     setInterval(() => {
       if (!gameOver) {
-        if (Math.random() < 0.5) spawnObstacle();
+        const r = Math.random();
+        if (r < 0.4) spawnObstacle();
+        else if (r < 0.7) spawnAirObstacle();
         else spawnHole();
       }
     }, 2000);
@@ -163,6 +196,11 @@
           vy = 0;
           onGround = true;
         }
+      } else {
+        // 穴に落ちたらゲームオーバー
+        if (y <= 0) {
+          endGame();
+        }
       }
 
       player.style.bottom = y + "px";
@@ -176,14 +214,18 @@
         const x = parseInt(obs.style.left) - 3;
         obs.style.left = x + "px";
 
-        const px = playerX;
-        const py = y;
-        const ox = x;
-        const oy = 100;
+        if (hit(playerX, y, x, 100, 40, 40, 40, 60)) {
+          endGame();
+        }
+      });
 
-        if (px < ox + 40 && px + 40 > ox && py < oy + 60 && py + 40 > oy) {
-          gameOver = true;
-          gameoverText.style.display = "block";
+      // 空中障害物
+      airObstacles.forEach(obs => {
+        const x = parseInt(obs.style.left) - 3;
+        obs.style.left = x + "px";
+
+        if (hit(playerX, y, x, 200, 40, 40, 40, 40)) {
+          endGame();
         }
       });
 
@@ -192,6 +234,17 @@
       ui.textContent = `距離: ${distance.toFixed(1)}m`;
 
       requestAnimationFrame(loop);
+    }
+
+    function hit(px, py, ox, oy, pw, ph, ow, oh) {
+      return px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy;
+    }
+
+    function endGame() {
+      gameOver = true;
+      gameoverText.innerHTML = `GAME OVER<br>スコア: ${distance.toFixed(1)}m`;
+      gameoverText.style.display = "block";
+      retryBtn.style.display = "block";
     }
 
     loop();
