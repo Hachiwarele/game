@@ -2,22 +2,52 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Improved Side Scroller</title>
+  <title>Ocean Runner</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background: linear-gradient(#87CEEB, #1E90FF);
+      background: linear-gradient(#4fc3f7, #01579b);
+      background-size: 100% 200%;
+      animation: ocean 6s ease-in-out infinite alternate;
       font-family: sans-serif;
     }
+
+    @keyframes ocean {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100%; }
+    }
+
+    /* 主人公：青い魚 */
     #player {
       position: absolute;
-      width: 40px;
-      height: 40px;
-      background: red;
+      width: 45px;
+      height: 25px;
+      background: linear-gradient(90deg, #4fc3f7, #0288d1);
+      border-radius: 25px 25px 20px 20px;
       bottom: 100px;
       left: 100px;
+      animation: swim 0.6s infinite alternate ease-in-out;
     }
+
+    #player::after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      top: 5px;
+      width: 0;
+      height: 0;
+      border-top: 12px solid transparent;
+      border-bottom: 12px solid transparent;
+      border-left: 18px solid #0288d1;
+    }
+
+    @keyframes swim {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(3px); }
+    }
+
+    /* UI */
     #ui {
       position: absolute;
       top: 10px;
@@ -26,6 +56,7 @@
       font-size: 24px;
       text-shadow: 2px 2px 4px black;
     }
+
     #gameover {
       position: absolute;
       top: 35%;
@@ -36,6 +67,7 @@
       text-shadow: 3px 3px 6px black;
       display: none;
     }
+
     #retry {
       position: absolute;
       top: 55%;
@@ -43,43 +75,96 @@
       text-align: center;
       display: none;
     }
+
     #retry button {
       font-size: 24px;
       padding: 10px 20px;
     }
+
+    /* 床 */
     .ground {
       position: absolute;
       width: 400px;
       height: 100px;
-      background: #654321;
+      background: #004d40;
       bottom: 0;
     }
+
+    /* 穴 */
     .hole {
       position: absolute;
       height: 100px;
       background: transparent;
       bottom: 0;
     }
+
+    /* 障害物（岩） */
     .obstacle {
       position: absolute;
       width: 40px;
       height: 60px;
-      background: purple;
+      background: #3e2723;
       bottom: 100px;
+      border-radius: 10px;
     }
+
+    /* 空中障害物（海藻） */
     .air-obstacle {
       position: absolute;
       width: 40px;
       height: 40px;
-      background: orange;
+      background: #2e7d32;
       bottom: 200px;
+      border-radius: 10px;
     }
-    .enemy {
+
+    /* 敵：クラゲ */
+    .jelly {
       position: absolute;
-      width: 50px;
-      height: 50px;
-      background: black;
+      width: 40px;
+      height: 30px;
+      background: rgba(255, 182, 193, 0.8);
+      border-radius: 20px 20px 10px 10px;
       bottom: 100px;
+      animation: float 1.5s ease-in-out infinite alternate;
+    }
+
+    .jelly::after {
+      content: "";
+      position: absolute;
+      bottom: -12px;
+      left: 5px;
+      width: 30px;
+      height: 12px;
+      border-bottom: 3px solid pink;
+      border-radius: 50%;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(6px); }
+    }
+
+    /* 敵：サメ */
+    .shark {
+      position: absolute;
+      width: 60px;
+      height: 30px;
+      background: #455a64;
+      border-radius: 30px 30px 20px 20px;
+      bottom: 100px;
+    }
+
+    .shark::after {
+      content: "";
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-bottom: 18px solid #455a64;
     }
   </style>
 </head>
@@ -114,7 +199,7 @@
     let airObstacles = [];
     let enemies = [];
 
-    // 無限床
+    /* 無限床 */
     function createGround(x) {
       const g = document.createElement("div");
       g.className = "ground";
@@ -128,7 +213,7 @@
     createGround(800);
     createGround(1200);
 
-    // PC操作
+    /* PC操作 */
     document.addEventListener("keydown", (e) => {
       if (e.code === "Space" && onGround) {
         vy = 15;
@@ -137,12 +222,13 @@
       if (e.code === "ArrowLeft") moveLeft = true;
       if (e.code === "ArrowRight") moveRight = true;
     });
+
     document.addEventListener("keyup", (e) => {
       if (e.code === "ArrowLeft") moveLeft = false;
       if (e.code === "ArrowRight") moveRight = false;
     });
 
-    // スマホ操作
+    /* スマホ操作 */
     document.addEventListener("touchstart", (e) => {
       const x = e.touches[0].clientX;
       const width = window.innerWidth;
@@ -154,14 +240,15 @@
         onGround = false;
       }
     });
+
     document.addEventListener("touchend", () => {
       moveLeft = false;
       moveRight = false;
     });
 
-    // 穴（飛べる幅）
+    /* 穴（飛べる幅） */
     function spawnHole() {
-      const holeWidth = 80 + Math.random() * 70; // 80〜150px
+      const holeWidth = 80 + Math.random() * 70;
       const holeX = window.innerWidth + 400;
 
       const h = document.createElement("div");
@@ -173,7 +260,7 @@
       holes.push(h);
     }
 
-    // 障害物
+    /* 障害物 */
     function spawnObstacle() {
       const obs = document.createElement("div");
       obs.className = "obstacle";
@@ -182,7 +269,7 @@
       obstacles.push(obs);
     }
 
-    // 空中障害物
+    /* 空中障害物 */
     function spawnAirObstacle() {
       const obs = document.createElement("div");
       obs.className = "air-obstacle";
@@ -191,17 +278,18 @@
       airObstacles.push(obs);
     }
 
-    // 動く敵（50m以降）
+    /* 敵（クラゲ or サメ） */
     function spawnEnemy() {
+      const type = Math.random() < 0.5 ? "jelly" : "shark";
       const e = document.createElement("div");
-      e.className = "enemy";
+      e.className = type;
       e.style.left = window.innerWidth + "px";
       e.speed = 2 + Math.random() * 2;
       document.body.appendChild(e);
       enemies.push(e);
     }
 
-    // ランダム生成
+    /* ランダム生成 */
     setInterval(() => {
       if (gameOver) return;
 
@@ -213,24 +301,22 @@
       if (distance > 50 && Math.random() < 0.4) spawnEnemy();
     }, 2000);
 
+    /* ゲームループ */
     function loop() {
       if (gameOver) return;
 
-      // 横移動
       if (moveLeft) playerX -= 5;
       if (moveRight) playerX += 5;
       player.style.left = playerX + "px";
 
-      // 重力
       vy -= gravity;
       y += vy;
 
-      // 床判定
       let onFloor = false;
 
       grounds.forEach(g => {
         const gx = parseInt(g.style.left);
-        if (playerX + 40 > gx && playerX < gx + 400) {
+        if (playerX + 45 > gx && playerX < gx + 400) {
           if (y <= 100) {
             y = 100;
             vy = 0;
@@ -239,12 +325,10 @@
         }
       });
 
-      // 穴判定
       holes.forEach(h => {
         const hx = parseInt(h.style.left);
         const hw = parseInt(h.style.width);
-
-        if (playerX + 40 > hx && playerX < hx + hw) {
+        if (playerX + 45 > hx && playerX < hx + hw) {
           onFloor = false;
         }
       });
@@ -255,41 +339,35 @@
 
       player.style.bottom = y + "px";
 
-      // 床スクロール
       grounds.forEach(g => {
         const x = parseInt(g.style.left) - 3;
         g.style.left = x + "px";
         if (x < -400) g.style.left = window.innerWidth + "px";
       });
 
-      // 穴スクロール
       holes.forEach(h => {
         const x = parseInt(h.style.left) - 3;
         h.style.left = x + "px";
       });
 
-      // 障害物
       obstacles.forEach(obs => {
         const x = parseInt(obs.style.left) - 3;
         obs.style.left = x + "px";
-        if (hit(playerX, y, x, 100, 40, 40, 40, 60)) endGame();
+        if (hit(playerX, y, x, 100, 45, 25, 40, 60)) endGame();
       });
 
-      // 空中障害物
       airObstacles.forEach(obs => {
         const x = parseInt(obs.style.left) - 3;
         obs.style.left = x + "px";
-        if (hit(playerX, y, x, 200, 40, 40, 40, 40)) endGame();
+        if (hit(playerX, y, x, 200, 45, 25, 40, 40)) endGame();
       });
 
-      // 敵
       enemies.forEach(e => {
         const x = parseInt(e.style.left) - e.speed;
         e.style.left = x + "px";
-        if (hit(playerX, y, x, 100, 40, 40, 50, 50)) endGame();
+        if (hit(playerX, y, x, 100, 45, 25, 50, 50)) endGame();
       });
 
-      // 距離
       distance += 0.1;
       ui.textContent = `距離: ${distance.toFixed(1)}m`;
 
