@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Side Scroller Game</title>
+  <title>Improved Side Scroller</title>
   <style>
     body {
       margin: 0;
@@ -18,14 +18,6 @@
       bottom: 100px;
       left: 100px;
     }
-    #ground {
-      position: absolute;
-      width: 2000px;
-      height: 100px;
-      background: #654321;
-      bottom: 0;
-      left: 0;
-    }
     #ui {
       position: absolute;
       top: 10px;
@@ -33,20 +25,6 @@
       color: white;
       font-size: 24px;
       text-shadow: 2px 2px 4px black;
-    }
-    .obstacle {
-      position: absolute;
-      width: 40px;
-      height: 60px;
-      background: purple;
-      bottom: 100px;
-    }
-    .air-obstacle {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      background: orange;
-      bottom: 200px;
     }
     #gameover {
       position: absolute;
@@ -69,19 +47,45 @@
       font-size: 24px;
       padding: 10px 20px;
     }
+    .ground {
+      position: absolute;
+      width: 400px;
+      height: 100px;
+      background: #654321;
+      bottom: 0;
+    }
+    .obstacle {
+      position: absolute;
+      width: 40px;
+      height: 60px;
+      background: purple;
+      bottom: 100px;
+    }
+    .air-obstacle {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: orange;
+      bottom: 200px;
+    }
+    .enemy {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: black;
+      bottom: 100px;
+    }
   </style>
 </head>
 <body>
 
   <div id="player"></div>
-  <div id="ground"></div>
   <div id="ui">距離: 0m</div>
   <div id="gameover"></div>
   <div id="retry"><button onclick="location.reload()">リトライ</button></div>
 
   <script>
     const player = document.getElementById("player");
-    const ground = document.getElementById("ground");
     const ui = document.getElementById("ui");
     const gameoverText = document.getElementById("gameover");
     const retryBtn = document.getElementById("retry");
@@ -91,18 +95,31 @@
     let gravity = 0.8;
     let onGround = true;
 
-    let scrollX = 0;
-    let distance = 0;
-
-    let obstacles = [];
-    let airObstacles = [];
-    let holes = [];
-
+    let playerX = 100;
     let moveLeft = false;
     let moveRight = false;
-    let playerX = 100;
 
+    let distance = 0;
     let gameOver = false;
+
+    let grounds = [];
+    let obstacles = [];
+    let airObstacles = [];
+    let enemies = [];
+
+    // 無限床を作る
+    function createGround(x) {
+      const g = document.createElement("div");
+      g.className = "ground";
+      g.style.left = x + "px";
+      document.body.appendChild(g);
+      grounds.push(g);
+    }
+
+    createGround(0);
+    createGround(400);
+    createGround(800);
+    createGround(1200);
 
     // PC操作
     document.addEventListener("keydown", (e) => {
@@ -135,7 +152,7 @@
       moveRight = false;
     });
 
-    // 障害物（地上）
+    // 障害物生成
     function spawnObstacle() {
       const obs = document.createElement("div");
       obs.className = "obstacle";
@@ -144,7 +161,7 @@
       obstacles.push(obs);
     }
 
-    // 空中障害物（ジャンプしたらアウト）
+    // 空中障害物
     function spawnAirObstacle() {
       const obs = document.createElement("div");
       obs.className = "air-obstacle";
@@ -153,22 +170,33 @@
       airObstacles.push(obs);
     }
 
-    // 穴
-    function spawnHole() {
-      const holeX = window.innerWidth;
-      const holeWidth = 200;
-      holes.push({ x: holeX, width: holeWidth });
+    // 動く敵（50m以降）
+    function spawnEnemy() {
+      const e = document.createElement("div");
+      e.className = "enemy";
+      e.style.left = window.innerWidth + "px";
+      e.speed = 2 + Math.random() * 2;
+      document.body.appendChild(e);
+      enemies.push(e);
     }
 
     // ランダム生成
     setInterval(() => {
-      if (!gameOver) {
-        const r = Math.random();
-        if (r < 0.4) spawnObstacle();
-        else if (r < 0.7) spawnAirObstacle();
-        else spawnHole();
-      }
+      if (gameOver) return;
+
+      const r = Math.random();
+      if (r < 0.4) spawnObstacle();
+      else if (r < 0.7) spawnAirObstacle();
+      else spawnHole();
+
+      if (distance > 50 && Math.random() < 0.4) spawnEnemy();
     }, 2000);
+
+    // 穴生成
+    function spawnHole() {
+      const g = createGround(window.innerWidth + 400);
+      g.style.background = "transparent";
+    }
 
     function loop() {
       if (gameOver) return;
@@ -182,54 +210,57 @@
       vy -= gravity;
       y += vy;
 
-      // 穴判定
-      let onHole = false;
-      holes.forEach(h => {
-        if (playerX + 40 > h.x + scrollX && playerX < h.x + h.width + scrollX) {
-          onHole = true;
+      // 床判定
+      let onFloor = false;
+      grounds.forEach(g => {
+        const gx = parseInt(g.style.left);
+        if (playerX + 40 > gx && playerX < gx + 400 && g.style.background !== "transparent") {
+          if (y <= 100) {
+            y = 100;
+            vy = 0;
+            onFloor = true;
+          }
         }
       });
 
-      if (!onHole) {
-        if (y <= 100) {
-          y = 100;
-          vy = 0;
-          onGround = true;
-        }
-      } else {
-        // 穴に落ちたらゲームオーバー
-        if (y <= 0) {
-          endGame();
-        }
-      }
+      onGround = onFloor;
+
+      if (!onGround && y <= 0) endGame();
 
       player.style.bottom = y + "px";
 
-      // スクロール
-      scrollX -= 3;
-      ground.style.left = scrollX + "px";
+      // 床スクロール
+      grounds.forEach(g => {
+        const x = parseInt(g.style.left) - 3;
+        g.style.left = x + "px";
+        if (x < -400) {
+          g.style.left = window.innerWidth + "px";
+          g.style.background = "#654321";
+        }
+      });
 
-      // 障害物移動 & 当たり判定
+      // 障害物
       obstacles.forEach(obs => {
         const x = parseInt(obs.style.left) - 3;
         obs.style.left = x + "px";
-
-        if (hit(playerX, y, x, 100, 40, 40, 40, 60)) {
-          endGame();
-        }
+        if (hit(playerX, y, x, 100, 40, 40, 40, 60)) endGame();
       });
 
       // 空中障害物
       airObstacles.forEach(obs => {
         const x = parseInt(obs.style.left) - 3;
         obs.style.left = x + "px";
-
-        if (hit(playerX, y, x, 200, 40, 40, 40, 40)) {
-          endGame();
-        }
+        if (hit(playerX, y, x, 200, 40, 40, 40, 40)) endGame();
       });
 
-      // 距離更新
+      // 敵
+      enemies.forEach(e => {
+        const x = parseInt(e.style.left) - e.speed;
+        e.style.left = x + "px";
+        if (hit(playerX, y, x, 100, 40, 40, 50, 50)) endGame();
+      });
+
+      // 距離
       distance += 0.1;
       ui.textContent = `距離: ${distance.toFixed(1)}m`;
 
