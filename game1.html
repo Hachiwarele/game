@@ -1,3 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GAME1</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #111;
+    font-family: sans-serif;
+    color: white;
+  }
+
+  #player {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    background: #0288d1;
+    bottom: 100px;
+    left: 100px;
+  }
+
+  #ui {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+  }
+
+  #gameover {
+    position: absolute;
+    top: 35%;
+    width: 100%;
+    text-align: center;
+    font-size: 48px;
+    display: none;
+  }
+
+  #retry {
+    position: absolute;
+    top: 55%;
+    width: 100%;
+    text-align: center;
+    display: none;
+  }
+
+  #retry button {
+    font-size: 24px;
+    padding: 10px 20px;
+    margin: 10px;
+  }
+
+  .ground {
+    position: absolute;
+    width: 400px;
+    height: 100px;
+    background: #004d40;
+    bottom: 0;
+  }
+
+  .hole {
+    position: absolute;
+    height: 100px;
+    background: transparent;
+    bottom: 0;
+  }
+
+  .obstacle {
+    position: absolute;
+    width: 40px;
+    height: 60px;
+    background: #3e2723;
+    bottom: 100px;
+  }
+
+  .air-obstacle {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #2e7d32;
+    bottom: 200px;
+  }
+
+  .enemy {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: #455a64;
+    bottom: 100px;
+  }
+</style>
+</head>
+<body>
+
+<div id="player"></div>
+<div id="ui">距離: 0m</div>
+<div id="gameover"></div>
+<div id="retry"></div>
+
+
 <script>
 const player = document.getElementById("player");
 const ui = document.getElementById("ui");
@@ -239,3 +340,6 @@ function endGame() {
 
 loop();
 </script>
+</body>
+</html>
+
