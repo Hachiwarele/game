@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GAME2</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #111;
+    font-family: sans-serif;
+    color: white;
+  }
+  #player {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #4fc3f7;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .enemy {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: #e53935;
+  }
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 24px;
+  }
+  #gameover {
+    position: absolute;
+    top: 40%;
+    width: 100%;
+    text-align: center;
+    font-size: 48px;
+    display: none;
+  }
+  #buttons {
+    position: absolute;
+    top: 60%;
+    width: 100%;
+    text-align: center;
+    display: none;
+  }
+  #buttons button {
+    font-size: 24px;
+    padding: 10px 20px;
+    margin: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div id="player"></div>
+<div id="score">SCORE: 0</div>
+<div id="gameover"></div>
+<div id="buttons">
+  <button onclick="location.reload()">リトライ</button>
+  <button onclick="location.href='index.html'">タイトルへ</button>
+</div>
+
+<script>
+const player = document.getElementById("player");
+const scoreText = document.getElementById("score");
+const gameoverText = document.getElementById("gameover");
+const buttons = document.getElementById("buttons");
+
+let px = window.innerWidth / 2 - 20;
+let speed = 7;
+let score = 0;
+let gameOver = false;
+
+let keys = { left: false, right: false };
+
+document.addEventListener("keydown", e => {
+  if (e.code === "ArrowLeft") keys.left = true;
+  if (e.code === "ArrowRight") keys.right = true;
+});
+document.addEventListener("keyup", e => {
+  if (e.code === "ArrowLeft") keys.left = false;
+  if (e.code === "ArrowRight") keys.right = false;
+});
+
+document.addEventListener("touchstart", e => {
+  const x = e.touches[0].clientX;
+  if (x < window.innerWidth / 2) keys.left = true;
+  else keys.right = true;
+});
+document.addEventListener("touchend", () => {
+  keys.left = false;
+  keys.right = false;
+});
+
+function spawnEnemy() {
+  if (gameOver) return;
+  const e = document.createElement("div");
+  e.className = "enemy";
+  e.style.left = Math.random() * (window.innerWidth - 30) + "px";
+  e.style.top = "-40px";
+  document.body.appendChild(e);
+
+  let ey = -40;
+  const fallSpeed = 3 + Math.random() * 4;
+
+  function fall() {
+    if (gameOver) return;
+    ey += fallSpeed;
+    e.style.top = ey + "px";
+
+    const ex = parseInt(e.style.left);
+
+    if (
+      ey + 30 > window.innerHeight - 90 &&
+      ex < px + 40 &&
+      ex + 30 > px
+    ) {
+      endGame();
+    }
+
+    if (ey < window.innerHeight) requestAnimationFrame(fall);
+    else {
+      e.remove();
+      score++;
+      scoreText.textContent = "SCORE: " + score;
+    }
+  }
+  fall();
+
+  setTimeout(spawnEnemy, 600 + Math.random() * 400);
+}
+
+function loop() {
+  if (gameOver) return;
+
+  if (keys.left) px -= speed;
+  if (keys.right) px += speed;
+
+  px = Math.max(0, Math.min(window.innerWidth - 40, px));
+  player.style.left = px + "px";
+
+  requestAnimationFrame(loop);
+}
+
+function endGame() {
+  gameOver = true;
+  gameoverText.textContent = "GAME OVER\nSCORE: " + score;
+  gameoverText.style.display = "block";
+  buttons.style.display = "block";
+}
+
+spawnEnemy();
+loop();
+</script>
+
+</body>
+</html>
