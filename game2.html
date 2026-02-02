@@ -7,39 +7,56 @@
   body {
     margin: 0;
     overflow: hidden;
-    background: #111;
+    background: radial-gradient(circle at center, #1a1a1a, #000);
     font-family: sans-serif;
     color: white;
   }
+
+  /* プレイヤー */
   #player {
     position: absolute;
-    width: 40px;
-    height: 40px;
-    background: #4fc3f7;
-    bottom: 50px;
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #4fc3f7, #0288d1);
+    border-radius: 8px;
+    bottom: 60px;
     left: 50%;
     transform: translateX(-50%);
+    box-shadow: 0 0 15px #4fc3f7;
   }
+
+  /* 敵 */
   .enemy {
     position: absolute;
-    width: 30px;
-    height: 30px;
-    background: #e53935;
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, #ff5252, #b71c1c);
+    border-radius: 6px;
+    box-shadow: 0 0 12px #ff1744;
   }
+
+  /* スコア */
   #score {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 24px;
+    top: 15px;
+    left: 20px;
+    font-size: 26px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px #4fc3f7;
   }
+
+  /* ゲームオーバー */
   #gameover {
     position: absolute;
-    top: 40%;
+    top: 35%;
     width: 100%;
     text-align: center;
-    font-size: 48px;
+    font-size: 60px;
     display: none;
+    text-shadow: 0 0 20px #ff1744;
   }
+
+  /* ボタン */
   #buttons {
     position: absolute;
     top: 60%;
@@ -48,9 +65,24 @@
     display: none;
   }
   #buttons button {
-    font-size: 24px;
-    padding: 10px 20px;
+    font-size: 26px;
+    padding: 12px 25px;
     margin: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: #4fc3f7;
+    color: #000;
+    box-shadow: 0 0 10px #4fc3f7;
+  }
+  #buttons button:hover {
+    background: #81d4fa;
+  }
+
+  /* 落下エフェクト */
+  @keyframes fallGlow {
+    0% { box-shadow: 0 0 5px #ff1744; }
+    100% { box-shadow: 0 0 20px #ff1744; }
   }
 </style>
 </head>
@@ -71,7 +103,7 @@ const gameoverText = document.getElementById("gameover");
 const buttons = document.getElementById("buttons");
 
 let px = window.innerWidth / 2 - 20;
-let speed = 7;
+let speed = 8;
 let score = 0;
 let gameOver = false;
 
@@ -98,33 +130,38 @@ document.addEventListener("touchend", () => {
 
 function spawnEnemy() {
   if (gameOver) return;
+
   const e = document.createElement("div");
   e.className = "enemy";
-  e.style.left = Math.random() * (window.innerWidth - 30) + "px";
-  e.style.top = "-40px";
+  e.style.left = Math.random() * (window.innerWidth - 35) + "px";
+  e.style.top = "-50px";
+  e.style.animation = "fallGlow 0.5s infinite alternate";
   document.body.appendChild(e);
 
-  let ey = -40;
-  const fallSpeed = 3 + Math.random() * 4;
+  let ey = -50;
+  let fallSpeed = 4 + Math.random() * 5 + score * 0.05; // スコアで加速
 
   function fall() {
     if (gameOver) return;
+
     ey += fallSpeed;
     e.style.top = ey + "px";
 
     const ex = parseInt(e.style.left);
 
-    // --- 正確な当たり判定（修正版） ---
+    // プレイヤー矩形
     const playerLeft = px;
-    const playerRight = px + 40;
-    const playerTop = window.innerHeight - 50 - 40;
-    const playerBottom = window.innerHeight - 50;
+    const playerRight = px + 45;
+    const playerTop = window.innerHeight - 60 - 45;
+    const playerBottom = window.innerHeight - 60;
 
+    // 敵矩形
     const enemyLeft = ex;
-    const enemyRight = ex + 30;
+    const enemyRight = ex + 35;
     const enemyTop = ey;
-    const enemyBottom = ey + 30;
+    const enemyBottom = ey + 35;
 
+    // 正確な衝突判定
     if (
       playerLeft < enemyRight &&
       playerRight > enemyLeft &&
@@ -134,7 +171,6 @@ function spawnEnemy() {
       endGame();
       return;
     }
-    // -----------------------------------
 
     if (ey < window.innerHeight) {
       requestAnimationFrame(fall);
@@ -144,9 +180,10 @@ function spawnEnemy() {
       scoreText.textContent = "SCORE: " + score;
     }
   }
+
   fall();
 
-  setTimeout(spawnEnemy, 600 + Math.random() * 400);
+  setTimeout(spawnEnemy, 500 + Math.random() * 300);
 }
 
 function loop() {
@@ -155,7 +192,7 @@ function loop() {
   if (keys.left) px -= speed;
   if (keys.right) px += speed;
 
-  px = Math.max(0, Math.min(window.innerWidth - 40, px));
+  px = Math.max(0, Math.min(window.innerWidth - 45, px));
   player.style.left = px + "px";
 
   requestAnimationFrame(loop);
