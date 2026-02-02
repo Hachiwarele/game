@@ -4,28 +4,14 @@
 <meta charset="UTF-8">
 <title>GAME2</title>
 <style>
- body {
-  margin: 0;
-  overflow: hidden;
-  height: 100vh;
-  width: 100vw;
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #1a1a1a, #000);
+    font-family: sans-serif;
+    color: white;
+  }
 
-  /* まずは確実に色をつける（白防止） */
-  background-color: #000;
-
-  /* Safari でも確実に動く書き方 */
-  background-image:
-    radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-
-  background-repeat: no-repeat;
-  background-size: cover;
-
-  font-family: sans-serif;
-  color: white;
-}
-
-
-  /* プレイヤー */
   #player {
     position: absolute;
     width: 45px;
@@ -36,9 +22,9 @@
     left: 50%;
     transform: translateX(-50%);
     box-shadow: 0 0 15px #4fc3f7;
+    transition: background 0.2s;
   }
 
-  /* 敵 */
   .enemy {
     position: absolute;
     width: 35px;
@@ -48,7 +34,15 @@
     box-shadow: 0 0 12px #ff1744;
   }
 
-  /* スコア */
+  .bullet {
+    position: absolute;
+    width: 8px;
+    height: 20px;
+    background: yellow;
+    border-radius: 4px;
+    box-shadow: 0 0 10px yellow;
+  }
+
   #score {
     position: absolute;
     top: 15px;
@@ -58,7 +52,6 @@
     text-shadow: 0 0 10px #4fc3f7;
   }
 
-  /* ゲームオーバー */
   #gameover {
     position: absolute;
     top: 35%;
@@ -69,7 +62,6 @@
     text-shadow: 0 0 20px #ff1744;
   }
 
-  /* ボタン */
   #buttons {
     position: absolute;
     top: 60%;
@@ -90,12 +82,6 @@
   }
   #buttons button:hover {
     background: #81d4fa;
-  }
-
-  /* 落下エフェクト */
-  @keyframes fallGlow {
-    0% { box-shadow: 0 0 5px #ff1744; }
-    100% { box-shadow: 0 0 20px #ff1744; }
   }
 </style>
 </head>
@@ -120,11 +106,13 @@ let speed = 8;
 let score = 0;
 let gameOver = false;
 
-let keys = { left: false, right: false };
+let canShoot = true; // クールタイム管理
+let keys = { left: false, right: false, shoot: false };
 
 document.addEventListener("keydown", e => {
   if (e.code === "ArrowLeft") keys.left = true;
   if (e.code === "ArrowRight") keys.right = true;
+  if (e.code === "Space") shoot();
 });
 document.addEventListener("keyup", e => {
   if (e.code === "ArrowLeft") keys.left = false;
@@ -133,14 +121,67 @@ document.addEventListener("keyup", e => {
 
 document.addEventListener("touchstart", e => {
   const x = e.touches[0].clientX;
-  if (x < window.innerWidth / 2) keys.left = true;
-  else keys.right = true;
+  if (x < window.innerWidth * 0.33) keys.left = true;
+  else if (x > window.innerWidth * 0.66) keys.right = true;
+  else shoot();
 });
 document.addEventListener("touchend", () => {
   keys.left = false;
   keys.right = false;
 });
 
+/* 弾を撃つ */
+function shoot() {
+  if (!canShoot || gameOver) return;
+
+  canShoot = false;
+  player.style.background = "#76ff03"; // 黄緑（クールタイム中）
+
+  const b = document.createElement("div");
+  b.className = "bullet";
+  b.style.left = (px + 18) + "px";
+  b.style.top = (window.innerHeight - 80) + "px";
+  document.body.appendChild(b);
+
+  let by = window.innerHeight - 80;
+
+  function fly() {
+    if (gameOver) return;
+
+    by -= 12;
+    b.style.top = by + "px";
+
+    // 敵との当たり判定
+    document.querySelectorAll(".enemy").forEach(e => {
+      const ex = parseInt(e.style.left);
+      const ey = parseInt(e.style.top);
+
+      if (
+        by < ey + 35 &&
+        by + 20 > ey &&
+        px + 45 > ex &&
+        px < ex + 35
+      ) {
+        e.remove();
+        b.remove();
+        score++;
+        scoreText.textContent = "SCORE: " + score;
+      }
+    });
+
+    if (by > -40) requestAnimationFrame(fly);
+    else b.remove();
+  }
+  fly();
+
+  // 3秒クールタイム
+  setTimeout(() => {
+    canShoot = true;
+    player.style.background = "linear-gradient(135deg, #4fc3f7, #0288d1)";
+  }, 3000);
+}
+
+/* 敵生成 */
 function spawnEnemy() {
   if (gameOver) return;
 
@@ -148,11 +189,10 @@ function spawnEnemy() {
   e.className = "enemy";
   e.style.left = Math.random() * (window.innerWidth - 35) + "px";
   e.style.top = "-50px";
-  e.style.animation = "fallGlow 0.5s infinite alternate";
   document.body.appendChild(e);
 
   let ey = -50;
-  let fallSpeed = 4 + Math.random() * 5 + score * 0.05; // スコアで加速
+  let fallSpeed = 4 + Math.random() * 5 + score * 0.05;
 
   function fall() {
     if (gameOver) return;
@@ -174,7 +214,6 @@ function spawnEnemy() {
     const enemyTop = ey;
     const enemyBottom = ey + 35;
 
-    // 正確な衝突判定
     if (
       playerLeft < enemyRight &&
       playerRight > enemyLeft &&
@@ -195,10 +234,10 @@ function spawnEnemy() {
   }
 
   fall();
-
   setTimeout(spawnEnemy, 500 + Math.random() * 300);
 }
 
+/* プレイヤー移動 */
 function loop() {
   if (gameOver) return;
 
@@ -211,6 +250,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+/* ゲームオーバー */
 function endGame() {
   gameOver = true;
   gameoverText.textContent = "GAME OVER\nSCORE: " + score;
