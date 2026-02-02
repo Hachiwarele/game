@@ -1,100 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>GAME2</title>
-<style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: radial-gradient(circle at center, #1a1a1a, #000);
-    font-family: sans-serif;
-    color: white;
-  }
-
-  #player {
-    position: absolute;
-    width: 45px;
-    height: 45px;
-    background: linear-gradient(135deg, #4fc3f7, #0288d1);
-    border-radius: 8px;
-    bottom: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    box-shadow: 0 0 15px #4fc3f7;
-    transition: background 0.2s;
-  }
-
-  .enemy {
-    position: absolute;
-    width: 35px;
-    height: 35px;
-    background: linear-gradient(135deg, #ff5252, #b71c1c);
-    border-radius: 6px;
-    box-shadow: 0 0 12px #ff1744;
-  }
-
-  .bullet {
-    position: absolute;
-    width: 8px;
-    height: 20px;
-    background: yellow;
-    border-radius: 4px;
-    box-shadow: 0 0 10px yellow;
-  }
-
-  #score {
-    position: absolute;
-    top: 15px;
-    left: 20px;
-    font-size: 26px;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px #4fc3f7;
-  }
-
-  #gameover {
-    position: absolute;
-    top: 35%;
-    width: 100%;
-    text-align: center;
-    font-size: 60px;
-    display: none;
-    text-shadow: 0 0 20px #ff1744;
-  }
-
-  #buttons {
-    position: absolute;
-    top: 60%;
-    width: 100%;
-    text-align: center;
-    display: none;
-  }
-  #buttons button {
-    font-size: 26px;
-    padding: 12px 25px;
-    margin: 10px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    background: #4fc3f7;
-    color: #000;
-    box-shadow: 0 0 10px #4fc3f7;
-  }
-  #buttons button:hover {
-    background: #81d4fa;
-  }
-</style>
-</head>
-<body>
-
-<div id="player"></div>
-<div id="score">SCORE: 0</div>
-<div id="gameover"></div>
-<div id="buttons">
-  <button onclick="location.reload()">リトライ</button>
-  <button onclick="location.href='index.html'">タイトルへ</button>
-</div>
-
 <script>
 const player = document.getElementById("player");
 const scoreText = document.getElementById("score");
@@ -106,8 +9,8 @@ let speed = 8;
 let score = 0;
 let gameOver = false;
 
-let canShoot = true; // クールタイム管理
-let keys = { left: false, right: false, shoot: false };
+let canShoot = true;
+let keys = { left: false, right: false };
 
 document.addEventListener("keydown", e => {
   if (e.code === "ArrowLeft") keys.left = true;
@@ -135,7 +38,7 @@ function shoot() {
   if (!canShoot || gameOver) return;
 
   canShoot = false;
-  player.style.background = "#76ff03"; // 黄緑（クールタイム中）
+  player.style.background = "#76ff03";
 
   const b = document.createElement("div");
   b.className = "bullet";
@@ -151,8 +54,9 @@ function shoot() {
     by -= 12;
     b.style.top = by + "px";
 
-    // 敵との当たり判定
     document.querySelectorAll(".enemy").forEach(e => {
+      if (e.dead) return;
+
       const ex = parseInt(e.style.left);
       const ey = parseInt(e.style.top);
 
@@ -162,6 +66,7 @@ function shoot() {
         px + 45 > ex &&
         px < ex + 35
       ) {
+        e.dead = true;
         e.remove();
         b.remove();
         score++;
@@ -174,7 +79,6 @@ function shoot() {
   }
   fly();
 
-  // 3秒クールタイム
   setTimeout(() => {
     canShoot = true;
     player.style.background = "linear-gradient(135deg, #4fc3f7, #0288d1)";
@@ -189,26 +93,25 @@ function spawnEnemy() {
   e.className = "enemy";
   e.style.left = Math.random() * (window.innerWidth - 35) + "px";
   e.style.top = "-50px";
+  e.dead = false;
   document.body.appendChild(e);
 
   let ey = -50;
   let fallSpeed = 4 + Math.random() * 5 + score * 0.05;
 
   function fall() {
-    if (gameOver) return;
+    if (gameOver || e.dead) return;
 
     ey += fallSpeed;
     e.style.top = ey + "px";
 
     const ex = parseInt(e.style.left);
 
-    // プレイヤー矩形
     const playerLeft = px;
     const playerRight = px + 45;
     const playerTop = window.innerHeight - 60 - 45;
     const playerBottom = window.innerHeight - 60;
 
-    // 敵矩形
     const enemyLeft = ex;
     const enemyRight = ex + 35;
     const enemyTop = ey;
@@ -227,9 +130,11 @@ function spawnEnemy() {
     if (ey < window.innerHeight) {
       requestAnimationFrame(fall);
     } else {
+      if (!e.dead) {
+        score++;
+        scoreText.textContent = "SCORE: " + score;
+      }
       e.remove();
-      score++;
-      scoreText.textContent = "SCORE: " + score;
     }
   }
 
@@ -261,6 +166,3 @@ function endGame() {
 spawnEnemy();
 loop();
 </script>
-
-</body>
-</html>
