@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ocean Runner - Simple Shapes</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(#4fc3f7, #01579b);
+      background-size: 100% 200%;
+      animation: ocean 6s ease-in-out infinite alternate;
+      font-family: sans-serif;
+    }
+
+    @keyframes ocean {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100%; }
+    }
+
+    /* 主人公（四角） */
+    #player {
+      position: absolute;
+      width: 45px;
+      height: 45px;
+      background: #0288d1;
+      bottom: 100px;
+      left: 100px;
+    }
+
+    /* UI */
+    #ui {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: white;
+      font-size: 24px;
+      text-shadow: 2px 2px 4px black;
+    }
+
+    #gameover {
+      position: absolute;
+      top: 35%;
+      width: 100%;
+      text-align: center;
+      font-size: 48px;
+      color: white;
+      text-shadow: 3px 3px 6px black;
+      display: none;
+    }
+
+    #retry {
+      position: absolute;
+      top: 55%;
+      width: 100%;
+      text-align: center;
+      display: none;
+    }
+
+    #retry button {
+      font-size: 24px;
+      padding: 10px 20px;
+    }
+
+    /* 床（四角） */
+    .ground {
+      position: absolute;
+      width: 400px;
+      height: 100px;
+      background: #004d40;
+      bottom: 0;
+    }
+
+    /* 穴（透明） */
+    .hole {
+      position: absolute;
+      height: 100px;
+      background: transparent;
+      bottom: 0;
+    }
+
+    /* 障害物（四角） */
+    .obstacle {
+      position: absolute;
+      width: 40px;
+      height: 60px;
+      background: #3e2723;
+      bottom: 100px;
+    }
+
+    /* 空中障害物（四角） */
+    .air-obstacle {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: #2e7d32;
+      bottom: 200px;
+    }
+
+    /* 敵（四角） */
+    .enemy {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: #455a64;
+      bottom: 100px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="player"></div>
+  <div id="ui">距離: 0m</div>
+  <div id="gameover"></div>
+  <div id="retry"><button onclick="location.reload()">リトライ</button></div>
+
+  <script>
+    const player = document.getElementById("player");
+    const ui = document.getElementById("ui");
+    const gameoverText = document.getElementById("gameover");
+    const retryBtn = document.getElementById("retry");
+
+    let y = 100;
+    let vy = 0;
+    let gravity = 0.8;
+    let onGround = true;
+
+    let playerX = 100;
+    let moveLeft = false;
+    let moveRight = false;
+
+    let distance = 0;
+    let gameOver = false;
+
+    let grounds = [];
+    let holes = [];
+    let obstacles = [];
+    let airObstacles = [];
+    let enemies = [];
+
+    /* 無限床 */
+    function createGround(x) {
+      const g = document.createElement("div");
+      g.className = "ground";
+      g.style.left = x + "px";
+      document.body.appendChild(g);
+      grounds.push(g);
+    }
+
+    createGround(0);
+    createGround(400);
+    createGround(800);
+    createGround(1200);
+
+    /* PC操作 */
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && onGround) {
+        vy = 15;
+        onGround = false;
+      }
+      if (e.code === "ArrowLeft") moveLeft = true;
+      if (e.code === "ArrowRight") moveRight = true;
+    });
+
+    document.addEventListener("keyup", (e) => {
+      if (e.code === "ArrowLeft") moveLeft = false;
+      if (e.code === "ArrowRight") moveRight = false;
+    });
+
+    /* スマホ操作 */
+    document.addEventListener("touchstart", (e) => {
+      const x = e.touches[0].clientX;
+      const width = window.innerWidth;
+
+      if (x < width * 0.33) moveLeft = true;
+      else if (x > width * 0.66) moveRight = true;
+      else if (onGround) {
+        vy = 15;
+        onGround = false;
+      }
+    });
+
+    document.addEventListener("touchend", () => {
+      moveLeft = false;
+      moveRight = false;
+    });
+
+    /* 穴（飛べる幅） */
+    function spawnHole() {
+      const holeWidth = 80 + Math.random() * 70;
+      const holeX = window.innerWidth + 400;
+
+      const h = document.createElement("div");
+      h.className = "hole";
+      h.style.left = holeX + "px";
+      h.style.width = holeWidth + "px";
+      document.body.appendChild(h);
+
+      holes.push(h);
+    }
+
+    /* 障害物 */
+    function spawnObstacle() {
+      const obs = document.createElement("div");
+      obs.className = "obstacle";
+      obs.style.left = window.innerWidth + "px";
+      document.body.appendChild(obs);
+      obstacles.push(obs);
+    }
+
+    /* 空中障害物 */
+    function spawnAirObstacle() {
+      const obs = document.createElement("div");
+      obs.className = "air-obstacle";
+      obs.style.left = window.innerWidth + "px";
+      document.body.appendChild(obs);
+      airObstacles.push(obs);
+    }
+
+    /* 敵（四角） */
+    function spawnEnemy() {
+      const e = document.createElement("div");
+      e.className = "enemy";
+      e.style.left = window.innerWidth + "px";
+      e.speed = 2 + Math.random() * 2;
+      document.body.appendChild(e);
+      enemies.push(e);
+    }
+
+    /* ランダム生成 */
+    setInterval(() => {
+      if (gameOver) return;
+
+      const r = Math.random();
+      if (r < 0.4) spawnObstacle();
+      else if (r < 0.7) spawnAirObstacle();
+      else spawnHole();
+
+      if (distance > 50 && Math.random() < 0.4) spawnEnemy();
+    }, 2000);
+
+    /* ゲームループ */
+    function loop() {
+      if (gameOver) return;
+
+      if (moveLeft) playerX -= 5;
+      if (moveRight) playerX += 5;
+      player.style.left = playerX + "px";
+
+      vy -= gravity;
+      y += vy;
+
+      let onFloor = false;
+
+      grounds.forEach(g => {
+        const gx = parseInt(g.style.left);
+        if (playerX + 45 > gx && playerX < gx + 400) {
+          if (y <= 100) {
+            y = 100;
+            vy = 0;
+            onFloor = true;
+          }
+        }
+      });
+
+      holes.forEach(h => {
+        const hx = parseInt(h.style.left);
+        const hw = parseInt(h.style.width);
+        if (playerX + 45 > hx && playerX < hx + hw) {
+          onFloor = false;
+        }
+      });
+
+      onGround = onFloor;
+
+      if (!onGround && y <= 0) endGame();
+
+      player.style.bottom = y + "px";
+
+      grounds.forEach(g => {
+        const x = parseInt(g.style.left) - 3;
+        g.style.left = x + "px";
+        if (x < -400) g.style.left = window.innerWidth + "px";
+      });
+
+      holes.forEach(h => {
+        const x = parseInt(h.style.left) - 3;
+        h.style.left = x + "px";
+      });
+
+      obstacles.forEach(obs => {
+        const x = parseInt(obs.style.left) - 3;
+        obs.style.left = x + "px";
+        if (hit(playerX, y, x, 100, 45, 45, 40, 60)) endGame();
+      });
+
+      airObstacles.forEach(obs => {
+        const x = parseInt(obs.style.left) - 3;
+        obs.style.left = x + "px";
+        if (hit(playerX, y, x, 200, 45, 45, 40, 40)) endGame();
+      });
+
+      enemies.forEach(e => {
+        const x = parseInt(e.style.left) - e.speed;
+        e.style.left = x + "px";
+        if (hit(playerX, y, x, 100, 45, 45, 50, 50)) endGame();
+      });
+
+      distance += 0.1;
+      ui.textContent = `距離: ${distance.toFixed(1)}m`;
+
+      requestAnimationFrame(loop);
+    }
+
+    function hit(px, py, ox, oy, pw, ph, ow, oh) {
+      return px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy;
+    }
+
+    function endGame() {
+      gameOver = true;
+      gameoverText.innerHTML = `GAME OVER<br>スコア: ${distance.toFixed(1)}m`;
+      gameoverText.style.display = "block";
+      retryBtn.style.display = "block";
+    }
+
+    loop();
+  </script>
+</body>
+</html>
