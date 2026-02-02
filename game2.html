@@ -114,16 +114,31 @@ function spawnEnemy() {
 
     const ex = parseInt(e.style.left);
 
+    // --- 正確な当たり判定（修正版） ---
+    const playerLeft = px;
+    const playerRight = px + 40;
+    const playerTop = window.innerHeight - 50 - 40;
+    const playerBottom = window.innerHeight - 50;
+
+    const enemyLeft = ex;
+    const enemyRight = ex + 30;
+    const enemyTop = ey;
+    const enemyBottom = ey + 30;
+
     if (
-      ey + 30 > window.innerHeight - 90 &&
-      ex < px + 40 &&
-      ex + 30 > px
+      playerLeft < enemyRight &&
+      playerRight > enemyLeft &&
+      playerTop < enemyBottom &&
+      playerBottom > enemyTop
     ) {
       endGame();
+      return;
     }
+    // -----------------------------------
 
-    if (ey < window.innerHeight) requestAnimationFrame(fall);
-    else {
+    if (ey < window.innerHeight) {
+      requestAnimationFrame(fall);
+    } else {
       e.remove();
       score++;
       scoreText.textContent = "SCORE: " + score;
