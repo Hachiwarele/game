@@ -4,13 +4,26 @@
 <meta charset="UTF-8">
 <title>GAME2</title>
 <style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: radial-gradient(circle at center, #1a1a1a, #000);
-    font-family: sans-serif;
-    color: white;
-  }
+ body {
+  margin: 0;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+
+  /* まずは確実に色をつける（白防止） */
+  background-color: #000;
+
+  /* Safari でも確実に動く書き方 */
+  background-image:
+    radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+
+  background-repeat: no-repeat;
+  background-size: cover;
+
+  font-family: sans-serif;
+  color: white;
+}
+
 
   /* プレイヤー */
   #player {
