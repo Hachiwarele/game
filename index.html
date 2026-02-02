@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Ocean Runner</title>
+  <title>Ocean Runner - Simple Shapes</title>
   <style>
     body {
       margin: 0;
@@ -18,33 +18,14 @@
       100% { background-position: 0 100%; }
     }
 
-    /* 主人公：青い魚 */
+    /* 主人公（四角） */
     #player {
       position: absolute;
       width: 45px;
-      height: 25px;
-      background: linear-gradient(90deg, #4fc3f7, #0288d1);
-      border-radius: 25px 25px 20px 20px;
+      height: 45px;
+      background: #0288d1;
       bottom: 100px;
       left: 100px;
-      animation: swim 0.6s infinite alternate ease-in-out;
-    }
-
-    #player::after {
-      content: "";
-      position: absolute;
-      right: -18px;
-      top: 5px;
-      width: 0;
-      height: 0;
-      border-top: 12px solid transparent;
-      border-bottom: 12px solid transparent;
-      border-left: 18px solid #0288d1;
-    }
-
-    @keyframes swim {
-      0% { transform: translateY(0px); }
-      100% { transform: translateY(3px); }
     }
 
     /* UI */
@@ -81,7 +62,7 @@
       padding: 10px 20px;
     }
 
-    /* 床 */
+    /* 床（四角） */
     .ground {
       position: absolute;
       width: 400px;
@@ -90,7 +71,7 @@
       bottom: 0;
     }
 
-    /* 穴 */
+    /* 穴（透明） */
     .hole {
       position: absolute;
       height: 100px;
@@ -98,73 +79,31 @@
       bottom: 0;
     }
 
-    /* 障害物（岩） */
+    /* 障害物（四角） */
     .obstacle {
       position: absolute;
       width: 40px;
       height: 60px;
       background: #3e2723;
       bottom: 100px;
-      border-radius: 10px;
     }
 
-    /* 空中障害物（海藻） */
+    /* 空中障害物（四角） */
     .air-obstacle {
       position: absolute;
       width: 40px;
       height: 40px;
       background: #2e7d32;
       bottom: 200px;
-      border-radius: 10px;
     }
 
-    /* 敵：クラゲ */
-    .jelly {
+    /* 敵（四角） */
+    .enemy {
       position: absolute;
-      width: 40px;
-      height: 30px;
-      background: rgba(255, 182, 193, 0.8);
-      border-radius: 20px 20px 10px 10px;
-      bottom: 100px;
-      animation: float 1.5s ease-in-out infinite alternate;
-    }
-
-    .jelly::after {
-      content: "";
-      position: absolute;
-      bottom: -12px;
-      left: 5px;
-      width: 30px;
-      height: 12px;
-      border-bottom: 3px solid pink;
-      border-radius: 50%;
-    }
-
-    @keyframes float {
-      0% { transform: translateY(0px); }
-      100% { transform: translateY(6px); }
-    }
-
-    /* 敵：サメ */
-    .shark {
-      position: absolute;
-      width: 60px;
-      height: 30px;
+      width: 50px;
+      height: 50px;
       background: #455a64;
-      border-radius: 30px 30px 20px 20px;
       bottom: 100px;
-    }
-
-    .shark::after {
-      content: "";
-      position: absolute;
-      top: -12px;
-      left: 20px;
-      width: 0;
-      height: 0;
-      border-left: 12px solid transparent;
-      border-right: 12px solid transparent;
-      border-bottom: 18px solid #455a64;
     }
   </style>
 </head>
@@ -278,11 +217,10 @@
       airObstacles.push(obs);
     }
 
-    /* 敵（クラゲ or サメ） */
+    /* 敵（四角） */
     function spawnEnemy() {
-      const type = Math.random() < 0.5 ? "jelly" : "shark";
       const e = document.createElement("div");
-      e.className = type;
+      e.className = "enemy";
       e.style.left = window.innerWidth + "px";
       e.speed = 2 + Math.random() * 2;
       document.body.appendChild(e);
@@ -353,19 +291,19 @@
       obstacles.forEach(obs => {
         const x = parseInt(obs.style.left) - 3;
         obs.style.left = x + "px";
-        if (hit(playerX, y, x, 100, 45, 25, 40, 60)) endGame();
+        if (hit(playerX, y, x, 100, 45, 45, 40, 60)) endGame();
       });
 
       airObstacles.forEach(obs => {
         const x = parseInt(obs.style.left) - 3;
         obs.style.left = x + "px";
-        if (hit(playerX, y, x, 200, 45, 25, 40, 40)) endGame();
+        if (hit(playerX, y, x, 200, 45, 45, 40, 40)) endGame();
       });
 
       enemies.forEach(e => {
         const x = parseInt(e.style.left) - e.speed;
         e.style.left = x + "px";
-        if (hit(playerX, y, x, 100, 45, 25, 50, 50)) endGame();
+        if (hit(playerX, y, x, 100, 45, 45, 50, 50)) endGame();
       });
 
       distance += 0.1;
