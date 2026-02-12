@@ -1,693 +1,269 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>GB風テトリス（Hold対応・モバイル最適化）</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GB TETRIS Stable</title>
 <style>
-  :root{
-    --bg:#cfead0; --bezel:#7a8b5a; --screen:#9bd08b; --dark:#28421a; --btn:#333; --accent:#2a5d2a;
-  }
-  html,body{height:100%;margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN","メイリオ",sans-serif;background:linear-gradient(180deg,#e6f0df,#d6e6c9);display:flex;align-items:center;justify-content:center;}
-  .wrap{
-    width:min(980px,95vw);
-    max-width:98vw;
-    height:min(820px,95vh);
-    background:var(--bezel);
-    border-radius:16px;
-    padding:12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25), inset 0 -6px 18px rgba(0,0,0,0.12);
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-
-  .header{display:flex;justify-content:space-between;align-items:center;color:var(--dark);font-weight:800;padding:6px 8px;}
-  .main{
-    flex:1;
-    display:flex;
-    gap:12px;
-    align-items:stretch;
-    justify-content:center;
-    padding:6px;
-  }
-
-  /* 左: ゲーム（縦レイアウトに合わせて自動サイズ） */
-  .game-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:linear-gradient(180deg,#b9df9a,#90c36f);border-radius:8px;padding:8px;box-shadow:inset 0 6px 12px rgba(255,255,255,0.06);}
-  .canvas-area{display:flex;gap:12px;align-items:flex-start;justify-content:center;width:100%;height:100%;}
-  canvas#board{background:linear-gradient(180deg,#cfeec7,#b7e4a8);border-radius:6px;image-rendering:pixelated;display:block;touch-action: none;}
-  /* 右側（next / hold / stats / buttons） */
-  .side{width:220px;min-width:180px;display:flex;flex-direction:column;gap:8px;align-items:center;color:var(--dark);}
-  .panel{background:rgba(255,255,255,0.7);width:100%;padding:8px;border-radius:8px;box-sizing:border-box;text-align:center;}
-  .small{font-size:13px;padding:6px;border-radius:6px}
-  .stat{font-weight:800;font-size:18px;margin-top:4px}
-  .ctrls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-  .btn{background:var(--btn);color:white;border-radius:8px;padding:8px 10px;font-weight:800;user-select:none;cursor:pointer}
-  .round{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;user-select:none;cursor:pointer}
-  .round.action{background:linear-gradient(#5a1,#2a5);color:white}
-  .round.dir{background:linear-gradient(#444,#222);color:white}
-
-  /* touch controls area at bottom */
-  .touch-controls{
-    display:flex;gap:12px;align-items:center;justify-content:space-between;padding:8px;
-  }
-  .dpad{display:flex;gap:8px;align-items:center}
-  .action-keys{display:flex;gap:8px;flex-direction:column;align-items:center}
-
-  footer{font-size:12px;color:#264a25;text-align:center;padding-top:4px}
-
-  /* Responsive: side below on small screens */
-  @media (max-width:720px){
-    .main{flex-direction:column-reverse;}
-    .side{width:100%;display:flex;flex-direction:row;gap:8px;flex-wrap:wrap;justify-content:center;}
-    .panel{flex:1;min-width:140px}
-  }
-
-  /* visually hide when animating (we'll control rows in draw) */
+html,body{
+  margin:0;
+  padding:0;
+  height:100dvh;
+  overflow:hidden;
+  background:#dfead9;
+  font-family:sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.wrap{
+  width:100%;
+  height:100%;
+  max-width:900px;
+  display:flex;
+  flex-direction:column;
+  padding:10px;
+  box-sizing:border-box;
+}
+.main{
+  flex:1;
+  display:flex;
+  gap:10px;
+}
+.left{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+.right{
+  width:220px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.panel{
+  background:#ffffffaa;
+  border-radius:8px;
+  padding:8px;
+  text-align:center;
+}
+canvas{
+  background:#cfeec7;
+  border-radius:6px;
+  image-rendering:pixelated;
+}
+.controls{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:8px;
+}
+.btn{
+  background:#333;
+  color:white;
+  padding:8px 12px;
+  border-radius:6px;
+  font-weight:bold;
+  user-select:none;
+}
+.touch{
+  display:flex;
+  justify-content:space-between;
+  margin-top:10px;
+}
+.round{
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:#444;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+}
+@media(max-width:700px){
+  .main{flex-direction:column;}
+  .right{width:100%;flex-direction:row;flex-wrap:wrap;}
+  .panel{flex:1;}
+}
 </style>
 </head>
 <body>
-  <div class="wrap" role="application" aria-label="GameBoy風テトリス">
-    <div class="header">
-      <div>GB-TETRIS</div>
-      <div style="font-size:13px;color:var(--dark)">Mobile & Desktop — Hold対応</div>
-    </div>
-
-    <div class="main">
-      <div class="game-wrap" id="gameWrap">
-        <div class="canvas-area" id="canvasArea">
-          <!-- board will be sized dynamically by JS -->
-          <canvas id="board" aria-label="テトリス盤"></canvas>
-        </div>
-        <div style="width:100%;display:flex;gap:8px;justify-content:center;align-items:center;">
-          <div class="btn small" id="startBtn">START</div>
-          <div class="btn small" id="pauseBtn">PAUSE</div>
-          <div class="btn small" id="restartBtn">RESTART</div>
-          <div class="btn small" id="holdBtn">HOLD</div>
-        </div>
-      </div>
-
-      <div class="side" aria-hidden="false">
-        <div class="panel">
-          <div style="font-size:12px">NEXT</div>
-          <canvas id="next" width="120" height="120" style="margin-top:6px"></canvas>
-        </div>
-
-        <div class="panel">
-          <div style="font-size:12px">HOLD</div>
-          <canvas id="hold" width="120" height="120" style="margin-top:6px"></canvas>
-        </div>
-
-        <div class="panel">
-          <div style="font-size:12px">SCORE</div>
-          <div class="stat" id="score">0</div>
-          <div style="font-size:12px;margin-top:6px">LINES</div>
-          <div class="stat" id="lines">0</div>
-          <div style="font-size:12px;margin-top:6px">LEVEL</div>
-          <div class="stat" id="level">1</div>
-        </div>
-
-        <div class="panel" style="padding:10px">
-          <div style="font-size:13px;margin-bottom:6px">Controls</div>
-          <div style="font-size:12px;line-height:1.4;text-align:left">
-            ← → : 移動<br>
-            ↑ or Rotate button : 回転<br>
-            ↓ or Soft : ソフトドロップ<br>
-            Space or Hard : ハードドロップ<br>
-            Shift / C or HOLD button : ホールド（1落下につき1回）<br>
-            P : ポーズ
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- mobile touch controls -->
-    <div class="touch-controls" id="touchs">
-      <div class="dpad">
-        <div class="round dir" id="t-left">◀</div>
-        <div class="round dir" id="t-down">▼</div>
-        <div class="round dir" id="t-right">▶</div>
-      </div>
-      <div class="action-keys">
-        <div class="round action" id="t-rotate">↻</div>
-        <div class="round action" id="t-hard">⤓</div>
-        <div class="round action" id="t-hold">H</div>
-      </div>
-    </div>
-
-    <footer>保存して遊んでね — 盤面は画面いっぱいに拡大されるよ</footer>
-  </div>
+<div class="wrap">
+<div class="main">
+<div class="left">
+<canvas id="board"></canvas>
+<div class="controls">
+<div class="btn" id="restart">RESTART</div>
+<div class="btn" id="pause">PAUSE</div>
+<div class="btn" id="holdBtn">HOLD</div>
+</div>
+</div>
+<div class="right">
+<div class="panel">
+<div>NEXT</div>
+<canvas id="next" width="160" height="160"></canvas>
+</div>
+<div class="panel">
+<div>HOLD</div>
+<canvas id="hold" width="160" height="160"></canvas>
+</div>
+<div class="panel">
+<div>Score <span id="score">0</span></div>
+<div>Lines <span id="lines">0</span></div>
+</div>
+</div>
+</div>
+<div class="touch">
+<div class="round" id="left">◀</div>
+<div class="round" id="down">▼</div>
+<div class="round" id="right">▶</div>
+<div class="round" id="rotate">↻</div>
+<div class="round" id="hard">⤓</div>
+</div>
+</div>
 
 <script>
-(() => {
-  // --- config ---
-  const COLS = 10, ROWS = 20;
+const COLS=10, ROWS=20;
+let CELL=30;
+const boardCanvas=document.getElementById("board");
+const ctx=boardCanvas.getContext("2d");
+const nextCanvas=document.getElementById("next");
+const nextCtx=nextCanvas.getContext("2d");
+const holdCanvas=document.getElementById("hold");
+const holdCtx=holdCanvas.getContext("2d");
 
-  // canvas elements
-  const boardCanvas = document.getElementById('board');
-  const boardCtx = boardCanvas.getContext('2d');
-  const nextCanvas = document.getElementById('next');
-  const nextCtx = nextCanvas.getContext('2d');
-  const holdCanvas = document.getElementById('hold');
-  const holdCtx = holdCanvas.getContext('2d');
+let board, current, next, holdPieceData=null;
+let canHold=true;
+let running=true;
+let paused=false;
+let score=0, lines=0;
+let dropInterval=800;
+let last=0;
 
-  // UI
-  const scoreEl = document.getElementById('score');
-  const linesEl = document.getElementById('lines');
-  const levelEl = document.getElementById('level');
+function resize(){
+  const h=window.innerHeight-220;
+  const w=window.innerWidth-260;
+  CELL=Math.floor(Math.min(h/ROWS,w/COLS));
+  if(CELL<12) CELL=12;
+  boardCanvas.width=COLS*CELL;
+  boardCanvas.height=ROWS*CELL;
+}
+window.addEventListener("resize",resize);
+resize();
 
-  // size state
-  let CELL = 20; // px per cell (will be recalculated)
-  let DPR = window.devicePixelRatio || 1;
+function emptyBoard(){
+  return Array.from({length:ROWS},()=>Array(COLS).fill(0));
+}
+board=emptyBoard();
 
-  // game state
-  let board = createEmptyBoard();
-  let current = null;
-  let next = null;
-  let hold = null;
-  let canHold = true; // once-per-lock
-  let running = false;
-  let paused = false;
-  let animating = false; // true while line-blink animation running
-  let blinkRows = [];
-  let blinkVisible = true;
-  let dropCounter = 0;
-  let dropInterval = 800;
-  let lastTime = performance.now();
-  let score = 0, lines = 0, level = 1;
+const SHAPES={
+I:[[1,1,1,1]],
+O:[[1,1],[1,1]],
+T:[[0,1,0],[1,1,1]],
+L:[[1,0],[1,0],[1,1]],
+J:[[0,1],[0,1],[1,1]],
+S:[[0,1,1],[1,1,0]],
+Z:[[1,1,0],[0,1,1]]
+};
 
-  // tetrominoes
-  const PIECES = {
-    I: [
-      [[-1,0],[0,0],[1,0],[2,0]],
-      [[1,-1],[1,0],[1,1],[1,2]],
-      [[-1,1],[0,1],[1,1],[2,1]],
-      [[0,-1],[0,0],[0,1],[0,2]],
-    ],
-    O: [
-      [[0,0],[1,0],[0,1],[1,1]],
-      [[0,0],[1,0],[0,1],[1,1]],
-      [[0,0],[1,0],[0,1],[1,1]],
-      [[0,0],[1,0],[0,1],[1,1]],
-    ],
-    T: [
-      [[-1,0],[0,0],[1,0],[0,1]],
-      [[0,-1],[0,0],[0,1],[1,0]],
-      [[-1,0],[0,0],[1,0],[0,-1]],
-      [[0,-1],[0,0],[0,1],[-1,0]],
-    ],
-    S: [
-      [[0,0],[1,0],[-1,1],[0,1]],
-      [[0,-1],[0,0],[1,0],[1,1]],
-      [[0,0],[1,0],[-1,1],[0,1]],
-      [[0,-1],[0,0],[1,0],[1,1]],
-    ],
-    Z: [
-      [[-1,0],[0,0],[0,1],[1,1]],
-      [[1,-1],[0,0],[1,0],[0,1]],
-      [[-1,0],[0,0],[0,1],[1,1]],
-      [[1,-1],[0,0],[1,0],[0,1]],
-    ],
-    J: [
-      [[-1,0],[0,0],[1,0],[-1,1]],
-      [[0,-1],[0,0],[0,1],[1,1]],
-      [[1,0],[-1,0],[0,0],[1,-1]],
-      [[0,-1],[0,0],[0,1],[-1,-1]],
-    ],
-    L: [
-      [[-1,0],[0,0],[1,0],[1,1]],
-      [[0,-1],[0,0],[0,1],[1,-1]],
-      [[-1, -1],[-1,0],[0,0],[1,0]],
-      [[-1,1],[0,-1],[0,0],[0,1]],
-    ]
-  };
+function randomPiece(){
+  const keys=Object.keys(SHAPES);
+  const type=keys[Math.floor(Math.random()*keys.length)];
+  return {type,x:3,y:0};
+}
 
-  const COLORS = { I:'#58d7ff', O:'#ffd24a', T:'#b86af6', S:'#6ef26b', Z:'#ff6b6b', J:'#4aa0ff', L:'#ff9f46' };
+function drawCell(x,y,color){
+  ctx.fillStyle=color;
+  ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+}
 
-  // ---------------------------
-  // Helpers
-  function createEmptyBoard(){
-    const arr = [];
-    for(let r=0;r<ROWS;r++) arr.push(new Array(COLS).fill(null));
-    return arr;
-  }
-  function randPiece(){
-    const keys = Object.keys(PIECES);
-    const k = keys[Math.floor(Math.random()*keys.length)];
-    return {type:k, rot:0, x:3, y:-1};
-  }
-  function getShape(type, rot){ return PIECES[type][rot % 4]; }
-  function collide(piece, b, dx=0, dy=0, drot=0){
-    const rot = (piece.rot + drot + 4) % 4;
-    const shape = getShape(piece.type, rot);
-    for(const [sx,sy] of shape){
-      const x = piece.x + sx + dx;
-      const y = piece.y + sy + dy;
-      if(x < 0 || x >= COLS || y >= ROWS) return true;
-      if(y >= 0 && b[y][x]) return true;
+function draw(){
+  ctx.clearRect(0,0,boardCanvas.width,boardCanvas.height);
+  for(let y=0;y<ROWS;y++){
+    for(let x=0;x<COLS;x++){
+      if(board[y][x]) drawCell(x,y,"#4aa0ff");
     }
-    return false;
   }
-  function placePiece(piece){
-    const shape = getShape(piece.type, piece.rot);
-    for(const [sx,sy] of shape){
-      const x = piece.x + sx; const y = piece.y + sy;
-      if(y >= 0 && y < ROWS && x >= 0 && x < COLS) board[y][x] = piece.type;
-      else if(y < 0){ // game over (piece stacked above)
-        gameOver();
+}
+
+function merge(){
+  const shape=SHAPES[current.type];
+  for(let y=0;y<shape.length;y++){
+    for(let x=0;x<shape[y].length;x++){
+      if(shape[y][x]){
+        board[current.y+y][current.x+x]=1;
       }
     }
   }
+}
 
-  // ---------------------------
-  // resize logic: maximize board size while keeping area for controls
-  function resizeAll(){
-    DPR = window.devicePixelRatio || 1;
-    const wrap = document.querySelector('.wrap');
-    const wrapRect = wrap.getBoundingClientRect();
-    const side = document.querySelector('.side');
-    const sideRect = side.getBoundingClientRect();
-    // available area for board: wrap minus side width and UI paddings
-    // if narrow (mobile), side stacks below, so we use full width
-    let availableWidth = wrapRect.width - 24; // padding buffer
-    let availableHeight = wrapRect.height - 120; // header + controls approx
-
-    // if side is placed to right (desktop)
-    if(window.innerWidth > 720 && sideRect.width < wrapRect.width/2){
-      // reduce width to leave side
-      availableWidth = wrapRect.width - sideRect.width - 36;
-    }
-
-    // the board aspect: COLS x ROWS cells. Need some margin for controls, so keep square-ish vertical fit
-    // compute max cell size that fits both width and height
-    const maxCellByWidth = Math.floor(availableWidth / COLS);
-    const maxCellByHeight = Math.floor(availableHeight / ROWS);
-    CELL = Math.max(8, Math.min(maxCellByWidth, maxCellByHeight)); // clamp min size
-    // set canvas pixel size
-    boardCanvas.width = COLS * CELL * DPR;
-    boardCanvas.height = ROWS * CELL * DPR;
-    boardCanvas.style.width = (COLS * CELL) + 'px';
-    boardCanvas.style.height = (ROWS * CELL) + 'px';
-    boardCtx.setTransform(DPR,0,0,DPR,0,0);
-
-    // next & hold canvases fixed size in CSS (120x120) -> scale for DPR
-    [nextCanvas, holdCanvas].forEach(c => {
-      const w = c.width;
-      const h = c.height;
-      c.width = w * DPR;
-      c.height = h * DPR;
-      c.style.width = (w / DPR) + 'px';
-      c.style.height = (h / DPR) + 'px';
-      const ctx = c.getContext('2d');
-      ctx.setTransform(DPR,0,0,DPR,0,0);
-    });
-
-    draw();
-    drawNext();
-    drawHold();
-  }
-
-  window.addEventListener('resize', () => { resizeAll(); });
-
-  // ---------------------------
-  // Draw functions (respect blinkRows & blinkVisible)
-  function draw(){
-    // clear board bg
-    boardCtx.clearRect(0,0,boardCanvas.width,boardCanvas.height);
-    boardCtx.fillStyle = '#d7efcc';
-    boardCtx.fillRect(0,0,boardCanvas.width / DPR, boardCanvas.height / DPR);
-
-    // draw grid + placed blocks (skip blink rows when invisible)
-    for(let r=0;r<ROWS;r++){
-      for(let c=0;c<COLS;c++){
-        const t = board[r][c];
-        if(t){
-          // if this row is in blinkRows and currently invisible, skip drawing block
-          if(animating && blinkRows.includes(r) && !blinkVisible) {
-            // draw empty / nothing
-            boardCtx.strokeStyle = 'rgba(0,0,0,0.03)';
-            boardCtx.strokeRect(c*CELL, r*CELL, CELL, CELL);
-            continue;
-          }
-          drawCell(c,r,COLORS[t]);
-        } else {
-          boardCtx.strokeStyle = 'rgba(0,0,0,0.03)';
-          boardCtx.strokeRect(c*CELL, r*CELL, CELL, CELL);
-        }
-      }
-    }
-
-    // draw current piece (if not animating lines that would conflict)
-    if(current){
-      const shape = getShape(current.type, current.rot);
-      for(const [sx,sy] of shape){
-        const x = current.x + sx;
-        const y = current.y + sy;
-        if(y >= 0){
-          drawCell(x,y,COLORS[current.type]);
-        }
-      }
+function clearLines(){
+  let newBoard=[];
+  let cleared=0;
+  for(let y=0;y<ROWS;y++){
+    if(board[y].every(v=>v)){
+      cleared++;
+    }else{
+      newBoard.push(board[y]);
     }
   }
-
-  function drawCell(x,y,color){
-    const px = x * CELL, py = y * CELL;
-    boardCtx.fillStyle = color;
-    boardCtx.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
-    boardCtx.fillStyle = 'rgba(255,255,255,0.12)';
-    boardCtx.fillRect(px + Math.max(2,CELL*0.15), py + Math.max(2,CELL*0.12), Math.max(4, CELL/2), Math.max(2, CELL/6));
-    boardCtx.strokeStyle = 'rgba(0,0,0,0.18)';
-    boardCtx.strokeRect(px + 1, py + 1, CELL - 2, CELL - 2);
+  while(newBoard.length<ROWS){
+    newBoard.unshift(Array(COLS).fill(0));
   }
+  board=newBoard;
+  score+=cleared*100;
+  lines+=cleared;
+  document.getElementById("score").textContent=score;
+  document.getElementById("lines").textContent=lines;
+}
 
-  function drawNext(){
-    nextCtx.clearRect(0,0,nextCanvas.width,nextCanvas.height);
-    if(!next) return;
-    const size = 18;
-    const midx = nextCanvas.width / DPR / 2;
-    const midy = nextCanvas.height / DPR / 2;
-    const shape = getShape(next.type, 0);
-    for(const [sx,sy] of shape){
-      const x = midx + sx * size;
-      const y = midy + sy * size;
-      nextCtx.fillStyle = COLORS[next.type];
-      nextCtx.fillRect(x - 6, y - 6, 12, 12);
-      nextCtx.strokeStyle = 'rgba(0,0,0,0.12)';
-      nextCtx.strokeRect(x - 6, y - 6, 12, 12);
-    }
-  }
-
-  function drawHold(){
-    holdCtx.clearRect(0,0,holdCanvas.width,holdCanvas.height);
-    if(!hold) return;
-    const size = 18;
-    const midx = holdCanvas.width / DPR / 2;
-    const midy = holdCanvas.height / DPR / 2;
-    const shape = getShape(hold.type, 0);
-    for(const [sx,sy] of shape){
-      const x = midx + sx * size;
-      const y = midy + sy * size;
-      holdCtx.fillStyle = COLORS[hold.type];
-      holdCtx.fillRect(x - 6, y - 6, 12, 12);
-      holdCtx.strokeStyle = 'rgba(0,0,0,0.12)';
-      holdCtx.strokeRect(x - 6, y - 6, 12, 12);
-    }
-  }
-
-  // ---------------------------
-  // Game flow
-  function spawn(){
-    current = next || randPiece();
-    current.x = Math.floor((COLS - 4) / 2) + 1; // center-ish
-    current.y = -1;
-    next = randPiece();
-    canHold = true;
-    drawNext();
-    drawHold();
-    if(collide(current, board, 0, 0, 0)) gameOver();
-  }
-
-  function lockPiece(){
-    placePiece(current);
-    // check full lines
-    const full = [];
-    for(let r=0;r<ROWS;r++){
-      let fullLine = true;
-      for(let c=0;c<COLS;c++){
-        if(!board[r][c]) { fullLine = false; break; }
-      }
-      if(fullLine) full.push(r);
-    }
-    if(full.length > 0){
-      // start blink animation (2回点滅 => visible toggle 4 times total)
-      animateLineClear(full);
-    } else {
+function update(time=0){
+  if(!running||paused) return;
+  if(time-last>dropInterval){
+    current.y++;
+    if(current.y+SHAPES[current.type].length>ROWS){
+      current.y--;
+      merge();
+      clearLines();
       spawn();
     }
+    last=time;
   }
+  draw();
+  requestAnimationFrame(update);
+}
 
-  function softDrop(){
-    if(animating || !running || paused) return;
-    if(!collide(current, board, 0, 1, 0)){
-      current.y += 1;
-      score += 1;
-    } else {
-      lockPiece();
-    }
-    updateUI();
-    draw();
-  }
+function spawn(){
+  current=next||randomPiece();
+  next=randomPiece();
+  canHold=true;
+}
 
-  function hardDrop(){
-    if(animating || !running || paused) return;
-    while(!collide(current, board, 0, 1, 0)){
-      current.y += 1;
-      score += 2;
-    }
-    lockPiece();
-    updateUI();
-    draw();
-  }
-
-  function movePiece(dx){
-    if(animating || !running || paused) return;
-    if(!collide(current, board, dx, 0, 0)){
-      current.x += dx;
-      draw();
-    }
-  }
-
-  function rotatePiece(dir=1){
-    if(animating || !running || paused) return;
-    const offsets = [0, -1, 1, -2, 2];
-    for(const off of offsets){
-      if(!collide(current, board, off, 0, dir)){
-        current.x += off;
-        current.rot = (current.rot + dir + 4) % 4;
-        draw();
-        return;
-      }
-    }
-  }
-
-  // Hold implementation: one swap per lock
-  function holdPiece(){
-    if(animating || !running || paused) return;
-    if(!canHold) return;
-    if(!hold){
-      hold = { type: current.type };
-      // bring next into current
-      current = next;
-      next = randPiece();
-      current.x = Math.floor((COLS - 4) / 2) + 1;
-      current.y = -1;
-      current.rot = 0;
-      if(collide(current, board, 0, 0, 0)) gameOver();
-    } else {
-      // swap current.type and hold.type
-      const tmp = hold.type;
-      hold.type = current.type;
-      current = { type: tmp, rot:0, x: Math.floor((COLS - 4) / 2) + 1, y: -1 };
-      if(collide(current, board, 0, 0, 0)) gameOver();
-    }
-    canHold = false;
-    drawNext(); drawHold(); draw();
-  }
-
-  function animateLineClear(rows){
-    animating = true;
-    blinkRows = rows.slice().sort((a,b)=>a-b); // ascending
-    blinkVisible = true;
-    let toggles = 0;
-    const maxToggles = 4; // 4 toggles => 2 full flashes (visible->invisible->visible->invisible->then finish visible and remove)
-    const interval = 220;
-    const tid = setInterval(()=>{
-      blinkVisible = !blinkVisible;
-      draw();
-      toggles++;
-      if(toggles >= maxToggles){
-        clearInterval(tid);
-        // actually remove rows
-        // remove from board (higher rows come down)
-        // remove each row index in blinkRows (they are original indices). Since we remove from board, adjust offsets.
-        for(const rIndex of blinkRows.slice().sort((a,b)=>b-a)){ // remove from bottom to top
-          board.splice(rIndex, 1);
-          board.unshift(new Array(COLS).fill(null));
-        }
-        // scoring
-        const cleared = blinkRows.length;
-        const points = [0,40,100,300,1200];
-        score += (points[cleared] * level);
-        lines += cleared;
-        level = Math.floor(lines/10) + 1;
-        dropInterval = Math.max(80, 800 - (level-1)*60);
-        updateUI();
-        // reset animation state and spawn
-        animating = false;
-        blinkRows = [];
-        blinkVisible = true;
-        spawn();
-        draw();
-      }
-    }, interval);
-  }
-
-  function updateUI(){
-    scoreEl.textContent = score;
-    linesEl.textContent = lines;
-    levelEl.textContent = level;
-  }
-
-  function gameOver(){
-    running = false;
-    paused = false;
-    alert('Game Over! Score: ' + score);
-    // reset state
-    board = createEmptyBoard();
-    score = 0; lines = 0; level = 1;
-    dropInterval = 800;
-    next = randPiece();
-    current = null;
-    hold = null;
-    canHold = true;
-    updateUI();
-    drawNext(); drawHold(); draw();
-  }
-
-  // ---------------------------
-  // main loop
-  function loop(now = performance.now()){
-    if(!running || paused) return;
-    const delta = now - lastTime;
-    lastTime = now;
-    if(!animating){
-      dropCounter += delta;
-      if(dropCounter > dropInterval){
-        if(!collide(current, board, 0, 1, 0)){
-          current.y += 1;
-        } else {
-          lockPiece();
-        }
-        dropCounter = 0;
-      }
-    }
-    draw();
-    requestAnimationFrame(loop);
-  }
-
-  // ---------------------------
-  // Controls wiring
-  document.getElementById('startBtn').addEventListener('click', ()=>{ if(!running){ start(); } });
-  document.getElementById('pauseBtn').addEventListener('click', ()=>{ togglePause(); });
-  document.getElementById('restartBtn').addEventListener('click', ()=>{ restart(); });
-  document.getElementById('holdBtn').addEventListener('click', ()=>{ holdPiece(); });
-
-  // touch controls helpers (support hold/longpress)
-  function addTouch(id, fn){
-    const el = document.getElementById(id);
-    if(!el) return;
-    let timer = null;
-    let held = false;
-    const onStart = e => { e.preventDefault(); if(animating || !running || paused) return; held = true; fn(); timer = setInterval(()=>{ if(held) fn(); }, 160); };
-    const onEnd = e => { held = false; clearInterval(timer); };
-    el.addEventListener('touchstart', onStart, {passive:false});
-    el.addEventListener('touchend', onEnd);
-    el.addEventListener('touchcancel', onEnd);
-    el.addEventListener('mousedown', e=>{ e.preventDefault(); onStart(e); });
-    el.addEventListener('mouseup', onEnd);
-  }
-
-  addTouch('t-left', ()=>{ movePiece(-1); });
-  addTouch('t-right', ()=>{ movePiece(1); });
-  addTouch('t-down', ()=>{ softDrop(); });
-  addTouch('t-rotate', ()=>{ rotatePiece(1); });
-  addTouch('t-hard', ()=>{ hardDrop(); });
-  addTouch('t-hold', ()=>{ holdPiece(); });
-
-  // keyboard
-  window.addEventListener('keydown', e=>{
-    if(e.repeat) return;
-    if(!running && e.code === 'Enter') start();
-    if(e.code === 'ArrowLeft') { movePiece(-1); }
-    else if(e.code === 'ArrowRight') { movePiece(1); }
-    else if(e.code === 'ArrowUp') { rotatePiece(1); }
-    else if(e.code === 'ArrowDown') { softDrop(); }
-    else if(e.code === 'Space') { e.preventDefault(); hardDrop(); }
-    else if(e.code === 'KeyP') { togglePause(); }
-    else if(e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyC') { holdPiece(); }
-  });
-
-  // mouse buttons for desktop small controls: allow click-and-hold repeating
-  ['leftBtn','rightBtn','rotateBtn','softBtn','hardBtn'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(!el) return;
-    let intv=null, down=false;
-    el.addEventListener('mousedown', e=>{ e.preventDefault(); down=true; el.classList.add('active'); const handler = (()=>{ if(id==='leftBtn') movePiece(-1); else if(id==='rightBtn') movePiece(1); else if(id==='rotateBtn') rotatePiece(1); else if(id==='softBtn') softDrop(); else if(id==='hardBtn') hardDrop(); }); handler(); intv=setInterval(handler,160); });
-    window.addEventListener('mouseup', e=>{ down=false; clearInterval(intv); el.classList.remove('active'); });
-  });
-
-  // But desktop extra buttons might not exist in new layout; create fallback invisible ones if needed
-  // (none required; we provided main controls)
-
-  // ---------------------------
-  // Game control helpers
-  function start(){
-    if(running) return;
-    running = true;
-    paused = false;
-    if(!next) next = randPiece();
-    if(!current) spawn();
-    lastTime = performance.now();
-    requestAnimationFrame(loop);
-  }
-  function restart(){
-    board = createEmptyBoard();
-    score = 0; lines = 0; level = 1;
-    dropInterval = 800;
-    running = true; paused = false;
-    next = randPiece();
-    current = null; hold = null; canHold = true;
-    updateUI();
+function hold(){
+  if(!canHold) return;
+  if(!holdPieceData){
+    holdPieceData=current;
     spawn();
-    lastTime = performance.now();
-    requestAnimationFrame(loop);
+  }else{
+    [holdPieceData,current]=[current,holdPieceData];
   }
-  function togglePause(){
-    if(!running) return;
-    paused = !paused;
-    if(!paused){
-      lastTime = performance.now();
-      requestAnimationFrame(loop);
-    }
-  }
+  canHold=false;
+}
 
-  // ---------------------------
-  // initial setup
-  function init(){
-    // ensure some visible on-screen control for desktop quick actions (optional)
-    // create some small control buttons in side if user agent is desktop (we already have start/pause/restart/hold)
-    // set initial pieces
-    next = randPiece();
-    resizeAll();
-    spawn();
-    updateUI();
-    drawNext();
-    drawHold();
-    draw();
+document.getElementById("restart").onclick=()=>{
+  board=emptyBoard();
+  score=0; lines=0;
+  spawn();
+};
+document.getElementById("pause").onclick=()=>paused=!paused;
+document.getElementById("holdBtn").onclick=hold;
 
-    // auto-start so mobile gets automatic drop
-    start();
-  }
-
-  // ensure DOM layout settled
-  window.requestAnimationFrame(()=>{ init(); });
-
-  // Prevent scrolling when touching controls
-  ['touchstart','touchmove'].forEach(ev=>{
-    document.getElementById('touchs').addEventListener(ev, e=>{ e.preventDefault(); }, {passive:false});
-  });
-
-})();
+spawn();
+update();
 </script>
 </body>
 </html>
