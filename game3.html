@@ -3,204 +3,180 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>GameBoy風テトリス</title>
+<title>GB風テトリス（Hold対応・モバイル最適化）</title>
 <style>
   :root{
-    --bg:#c0d6b6;
-    --bezel:#7a8b5a;
-    --screen:#9bd08b;
-    --dark:#28421a;
-    --btn:#333;
-    --accent:#2a5d2a;
+    --bg:#cfead0; --bezel:#7a8b5a; --screen:#9bd08b; --dark:#28421a; --btn:#333; --accent:#2a5d2a;
   }
-  html,body{height:100%;margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "メイリオ", sans-serif;background:linear-gradient(180deg,#e6f0df,#d6e6c9);display:flex;align-items:center;justify-content:center;}
+  html,body{height:100%;margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN","メイリオ",sans-serif;background:linear-gradient(180deg,#e6f0df,#d6e6c9);display:flex;align-items:center;justify-content:center;}
   .wrap{
-    width:360px; /* base width to resemble GameBoy */
-    max-width:95vw;
-    padding:18px;
+    width:min(980px,95vw);
+    max-width:98vw;
+    height:min(820px,95vh);
     background:var(--bezel);
-    border-radius:18px;
+    border-radius:16px;
+    padding:12px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.25), inset 0 -6px 18px rgba(0,0,0,0.12);
     display:flex;
-    gap:14px;
     flex-direction:column;
-    align-items:center;
+    gap:10px;
   }
-  .gb-screen{
-    width:100%;
-    background:linear-gradient(180deg,#b9df9a,#90c36f);
-    border-radius:10px;
-    padding:14px;
-    box-shadow: inset 0 6px 18px rgba(255,255,255,0.08);
-    display:flex;
-    gap:12px;
-  }
-  .game-area{
+
+  .header{display:flex;justify-content:space-between;align-items:center;color:var(--dark);font-weight:800;padding:6px 8px;}
+  .main{
     flex:1;
     display:flex;
     gap:12px;
-    align-items:flex-start;
+    align-items:stretch;
     justify-content:center;
+    padding:6px;
   }
-  canvas#board{
-    image-rendering:pixelated;
-    background:linear-gradient(180deg,#cfeec7,#b7e4a8);
-    border-radius:6px;
-    box-shadow: inset 0 4px 14px rgba(0,0,0,0.12);
-  }
-  .side{
-    width:94px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    align-items:center;
-    color:var(--dark);
-  }
-  .side h3{margin:0;font-size:12px;color:var(--dark)}
-  .info{background:rgba(255,255,255,0.6);padding:8px;border-radius:8px;width:100%;text-align:center;font-size:13px}
-  .controls-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-  .stat{font-weight:700;font-size:16px;}
-  .buttons{
-    margin-top:6px;
-    display:flex;
-    gap:8px;
-    flex-direction:column;
-    width:100%;
-  }
-  .btn{
-    background:var(--btn);
-    color:white;
-    border-radius:8px;
-    padding:8px;
-    font-weight:700;
-    text-align:center;
-    user-select:none;
-  }
-  .small{padding:6px;font-size:13px;border-radius:6px}
-  /* Mobile on-screen controller */
+
+  /* 左: ゲーム（縦レイアウトに合わせて自動サイズ） */
+  .game-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:linear-gradient(180deg,#b9df9a,#90c36f);border-radius:8px;padding:8px;box-shadow:inset 0 6px 12px rgba(255,255,255,0.06);}
+  .canvas-area{display:flex;gap:12px;align-items:flex-start;justify-content:center;width:100%;height:100%;}
+  canvas#board{background:linear-gradient(180deg,#cfeec7,#b7e4a8);border-radius:6px;image-rendering:pixelated;display:block;touch-action: none;}
+  /* 右側（next / hold / stats / buttons） */
+  .side{width:220px;min-width:180px;display:flex;flex-direction:column;gap:8px;align-items:center;color:var(--dark);}
+  .panel{background:rgba(255,255,255,0.7);width:100%;padding:8px;border-radius:8px;box-sizing:border-box;text-align:center;}
+  .small{font-size:13px;padding:6px;border-radius:6px}
+  .stat{font-weight:800;font-size:18px;margin-top:4px}
+  .ctrls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .btn{background:var(--btn);color:white;border-radius:8px;padding:8px 10px;font-weight:800;user-select:none;cursor:pointer}
+  .round{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;user-select:none;cursor:pointer}
+  .round.action{background:linear-gradient(#5a1,#2a5);color:white}
+  .round.dir{background:linear-gradient(#444,#222);color:white}
+
+  /* touch controls area at bottom */
   .touch-controls{
-    display:none;
-    width:100%;
-    gap:10px;
-    justify-content:space-between;
-    align-items:center;
-    padding-top:8px;
+    display:flex;gap:12px;align-items:center;justify-content:space-between;padding:8px;
   }
   .dpad{display:flex;gap:8px;align-items:center}
-  .dpad .round{width:56px;height:56px;border-radius:50%;background:linear-gradient(#444,#222);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;user-select:none}
-  .action-keys{display:flex;gap:8px;flex-direction:column}
-  .action-keys .round{width:56px;height:56px;border-radius:50%;background:linear-gradient(#5a1,#2a5);display:flex;align-items:center;justify-content:center;color:white;font-weight:800}
-  /* Responsive: show touch controls on small screens */
-  @media (max-width:520px){
-    .wrap{width:94vw;padding:12px}
-    .touch-controls{display:flex}
-    .buttons{display:none}
+  .action-keys{display:flex;gap:8px;flex-direction:column;align-items:center}
+
+  footer{font-size:12px;color:#264a25;text-align:center;padding-top:4px}
+
+  /* Responsive: side below on small screens */
+  @media (max-width:720px){
+    .main{flex-direction:column-reverse;}
+    .side{width:100%;display:flex;flex-direction:row;gap:8px;flex-wrap:wrap;justify-content:center;}
+    .panel{flex:1;min-width:140px}
   }
-  /* next box canvas */
-  canvas#next{background:transparent}
-  footer{font-size:12px;color:#264a25;opacity:0.95;text-align:center;padding-top:6px}
-  .hint{font-size:12px;color:#234;opacity:0.9;margin-top:6px}
+
+  /* visually hide when animating (we'll control rows in draw) */
 </style>
 </head>
 <body>
   <div class="wrap" role="application" aria-label="GameBoy風テトリス">
-    <div style="display:flex;align-items:center;gap:10px;width:100%;justify-content:space-between;">
-      <div style="color:var(--dark);font-weight:800">GB-TETRIS</div>
-      <div style="font-size:12px;color:var(--dark)">Mobile & Desktop</div>
+    <div class="header">
+      <div>GB-TETRIS</div>
+      <div style="font-size:13px;color:var(--dark)">Mobile & Desktop — Hold対応</div>
     </div>
 
-    <div class="gb-screen" aria-hidden="false">
-      <div class="game-area">
-        <canvas id="board" width="200" height="400" aria-label="テトリス盤"></canvas>
-        <div class="side" aria-hidden="false">
-          <h3>NEXT</h3>
-          <canvas id="next" width="80" height="80"></canvas>
-          <div class="info">
-            <div>Score</div>
-            <div class="stat" id="score">0</div>
-          </div>
-          <div class="info">
-            <div>Lines</div>
-            <div class="stat" id="lines">0</div>
-          </div>
-          <div class="info">
-            <div>Level</div>
-            <div class="stat" id="level">1</div>
+    <div class="main">
+      <div class="game-wrap" id="gameWrap">
+        <div class="canvas-area" id="canvasArea">
+          <!-- board will be sized dynamically by JS -->
+          <canvas id="board" aria-label="テトリス盤"></canvas>
+        </div>
+        <div style="width:100%;display:flex;gap:8px;justify-content:center;align-items:center;">
+          <div class="btn small" id="startBtn">START</div>
+          <div class="btn small" id="pauseBtn">PAUSE</div>
+          <div class="btn small" id="restartBtn">RESTART</div>
+          <div class="btn small" id="holdBtn">HOLD</div>
+        </div>
+      </div>
+
+      <div class="side" aria-hidden="false">
+        <div class="panel">
+          <div style="font-size:12px">NEXT</div>
+          <canvas id="next" width="120" height="120" style="margin-top:6px"></canvas>
+        </div>
+
+        <div class="panel">
+          <div style="font-size:12px">HOLD</div>
+          <canvas id="hold" width="120" height="120" style="margin-top:6px"></canvas>
+        </div>
+
+        <div class="panel">
+          <div style="font-size:12px">SCORE</div>
+          <div class="stat" id="score">0</div>
+          <div style="font-size:12px;margin-top:6px">LINES</div>
+          <div class="stat" id="lines">0</div>
+          <div style="font-size:12px;margin-top:6px">LEVEL</div>
+          <div class="stat" id="level">1</div>
+        </div>
+
+        <div class="panel" style="padding:10px">
+          <div style="font-size:13px;margin-bottom:6px">Controls</div>
+          <div style="font-size:12px;line-height:1.4;text-align:left">
+            ← → : 移動<br>
+            ↑ or Rotate button : 回転<br>
+            ↓ or Soft : ソフトドロップ<br>
+            Space or Hard : ハードドロップ<br>
+            Shift / C or HOLD button : ホールド（1落下につき1回）<br>
+            P : ポーズ
           </div>
         </div>
       </div>
     </div>
 
-    <div class="hint">操作: 矢印 / ↑ 回転 / Space ハードドロップ / P ポーズ</div>
-
-    <div class="buttons">
-      <div style="display:flex;gap:8px;">
-        <div class="btn small" id="startBtn">START</div>
-        <div class="btn small" id="pauseBtn">PAUSE</div>
-        <div class="btn small" id="restartBtn">RESTART</div>
+    <!-- mobile touch controls -->
+    <div class="touch-controls" id="touchs">
+      <div class="dpad">
+        <div class="round dir" id="t-left">◀</div>
+        <div class="round dir" id="t-down">▼</div>
+        <div class="round dir" id="t-right">▶</div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <div class="btn small" id="leftBtn">←</div>
-        <div class="btn small" id="rotateBtn">↻</div>
-        <div class="btn small" id="rightBtn">→</div>
-        <div class="btn small" id="softBtn">↓</div>
-        <div class="btn small" id="hardBtn">Space</div>
+      <div class="action-keys">
+        <div class="round action" id="t-rotate">↻</div>
+        <div class="round action" id="t-hard">⤓</div>
+        <div class="round action" id="t-hold">H</div>
       </div>
     </div>
 
-    <!-- touch controls shown on mobile -->
-    <div class="touch-controls" aria-hidden="false">
-      <div class="dpad" style="flex:1;justify-content:flex-start;">
-        <div class="round" id="t-left">◀</div>
-        <div class="round" id="t-down">▼</div>
-        <div class="round" id="t-right">▶</div>
-      </div>
-      <div class="action-keys" style="align-items:flex-end;">
-        <div class="round" id="t-rotate">↻</div>
-        <div style="height:8px"></div>
-        <div class="round" id="t-hard">⤓</div>
-      </div>
-    </div>
-
-    <footer>保存して遊んでね — そのままオ프ラインで遊べるよ</footer>
+    <footer>保存して遊んでね — 盤面は画面いっぱいに拡大されるよ</footer>
   </div>
 
 <script>
-/* -------------------------
-   シンプルなテトリス実装
-   動作概要:
-   - Canvasレンダリング
-   - テトロミノ定義（回転配列）
-   - 衝突判定、回転の簡易ウォールキック
-   - ライン消去、スコア・レベル・ライン数管理
-   - キーボード＋タッチUI
-   ------------------------- */
-
 (() => {
+  // --- config ---
   const COLS = 10, ROWS = 20;
-  const CELL = 20; // 描画ピクセル（canvas実サイズとCSSで縮小される）
+
+  // canvas elements
   const boardCanvas = document.getElementById('board');
-  const ctx = boardCanvas.getContext('2d');
-  boardCanvas.width = COLS * CELL;
-  boardCanvas.height = ROWS * CELL;
-  boardCanvas.style.width = '200px';
-  boardCanvas.style.height = '400px';
-
+  const boardCtx = boardCanvas.getContext('2d');
   const nextCanvas = document.getElementById('next');
-  const nctx = nextCanvas.getContext('2d');
+  const nextCtx = nextCanvas.getContext('2d');
+  const holdCanvas = document.getElementById('hold');
+  const holdCtx = holdCanvas.getContext('2d');
 
-  // ゲーム状態
+  // UI
+  const scoreEl = document.getElementById('score');
+  const linesEl = document.getElementById('lines');
+  const levelEl = document.getElementById('level');
+
+  // size state
+  let CELL = 20; // px per cell (will be recalculated)
+  let DPR = window.devicePixelRatio || 1;
+
+  // game state
   let board = createEmptyBoard();
   let current = null;
   let next = null;
-  let dropCounter = 0;
-  let dropInterval = 800; // ms 初速
-  let lastTime = performance.now();
-  let score = 0, lines = 0, level = 1;
+  let hold = null;
+  let canHold = true; // once-per-lock
   let running = false;
   let paused = false;
+  let animating = false; // true while line-blink animation running
+  let blinkRows = [];
+  let blinkVisible = true;
+  let dropCounter = 0;
+  let dropInterval = 800;
+  let lastTime = performance.now();
+  let score = 0, lines = 0, level = 1;
 
-  // テトロミノ（回転ごとの相対座標）
+  // tetrominoes
   const PIECES = {
     I: [
       [[-1,0],[0,0],[1,0],[2,0]],
@@ -246,160 +222,423 @@
     ]
   };
 
-  const COLORS = {
-    I:'#58d7ff', O:'#ffd24a', T:'#b86af6', S:'#6ef26b', Z:'#ff6b6b', J:'#4aa0ff', L:'#ff9f46'
-  };
+  const COLORS = { I:'#58d7ff', O:'#ffd24a', T:'#b86af6', S:'#6ef26b', Z:'#ff6b6b', J:'#4aa0ff', L:'#ff9f46' };
 
+  // ---------------------------
+  // Helpers
   function createEmptyBoard(){
     const arr = [];
-    for(let r=0;r<ROWS;r++){
-      arr.push(new Array(COLS).fill(null));
-    }
+    for(let r=0;r<ROWS;r++) arr.push(new Array(COLS).fill(null));
     return arr;
   }
-
   function randPiece(){
     const keys = Object.keys(PIECES);
     const k = keys[Math.floor(Math.random()*keys.length)];
-    return {type:k, rot:0, x:3, y: -1}; // y may start slightly above
+    return {type:k, rot:0, x:3, y:-1};
   }
-
-  function getCells(piece){
-    const shape = PIECES[piece.type][piece.rot % 4];
-    return shape.map(([dx,dy])=>[piece.x+dx, piece.y+dy]);
-  }
-
-  function collide(piece, board, dx=0, dy=0, drot=0){
+  function getShape(type, rot){ return PIECES[type][rot % 4]; }
+  function collide(piece, b, dx=0, dy=0, drot=0){
     const rot = (piece.rot + drot + 4) % 4;
-    const shape = PIECES[piece.type][rot];
+    const shape = getShape(piece.type, rot);
     for(const [sx,sy] of shape){
       const x = piece.x + sx + dx;
       const y = piece.y + sy + dy;
       if(x < 0 || x >= COLS || y >= ROWS) return true;
-      if(y >= 0 && board[y][x]) return true;
+      if(y >= 0 && b[y][x]) return true;
     }
     return false;
   }
-
   function placePiece(piece){
-    const shape = PIECES[piece.type][piece.rot % 4];
+    const shape = getShape(piece.type, piece.rot);
     for(const [sx,sy] of shape){
-      const x = piece.x + sx;
-      const y = piece.y + sy;
-      if(y >= 0 && y < ROWS && x >=0 && x < COLS){
-        board[y][x] = piece.type;
-      } else if(y < 0){
-        // piece placed above top => game over
+      const x = piece.x + sx; const y = piece.y + sy;
+      if(y >= 0 && y < ROWS && x >= 0 && x < COLS) board[y][x] = piece.type;
+      else if(y < 0){ // game over (piece stacked above)
         gameOver();
       }
     }
   }
 
-  function clearLines(){
-    let cleared = 0;
-    outer: for(let r=ROWS-1;r>=0;r--){
-      for(let c=0;c<COLS;c++){
-        if(!board[r][c]) continue outer;
-      }
-      // line full
-      board.splice(r,1);
-      board.unshift(new Array(COLS).fill(null));
-      cleared++;
-      r++; // re-check same row index after splice
+  // ---------------------------
+  // resize logic: maximize board size while keeping area for controls
+  function resizeAll(){
+    DPR = window.devicePixelRatio || 1;
+    const wrap = document.querySelector('.wrap');
+    const wrapRect = wrap.getBoundingClientRect();
+    const side = document.querySelector('.side');
+    const sideRect = side.getBoundingClientRect();
+    // available area for board: wrap minus side width and UI paddings
+    // if narrow (mobile), side stacks below, so we use full width
+    let availableWidth = wrapRect.width - 24; // padding buffer
+    let availableHeight = wrapRect.height - 120; // header + controls approx
+
+    // if side is placed to right (desktop)
+    if(window.innerWidth > 720 && sideRect.width < wrapRect.width/2){
+      // reduce width to leave side
+      availableWidth = wrapRect.width - sideRect.width - 36;
     }
-    if(cleared>0){
-      // scoring (classic-ish)
-      const points = [0,40,100,300,1200];
-      score += (points[cleared] * level);
-      lines += cleared;
-      level = Math.floor(lines/10) + 1;
-      dropInterval = Math.max(80, 800 - (level-1)*60);
-      updateUI();
+
+    // the board aspect: COLS x ROWS cells. Need some margin for controls, so keep square-ish vertical fit
+    // compute max cell size that fits both width and height
+    const maxCellByWidth = Math.floor(availableWidth / COLS);
+    const maxCellByHeight = Math.floor(availableHeight / ROWS);
+    CELL = Math.max(8, Math.min(maxCellByWidth, maxCellByHeight)); // clamp min size
+    // set canvas pixel size
+    boardCanvas.width = COLS * CELL * DPR;
+    boardCanvas.height = ROWS * CELL * DPR;
+    boardCanvas.style.width = (COLS * CELL) + 'px';
+    boardCanvas.style.height = (ROWS * CELL) + 'px';
+    boardCtx.setTransform(DPR,0,0,DPR,0,0);
+
+    // next & hold canvases fixed size in CSS (120x120) -> scale for DPR
+    [nextCanvas, holdCanvas].forEach(c => {
+      const w = c.width;
+      const h = c.height;
+      c.width = w * DPR;
+      c.height = h * DPR;
+      c.style.width = (w / DPR) + 'px';
+      c.style.height = (h / DPR) + 'px';
+      const ctx = c.getContext('2d');
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+    });
+
+    draw();
+    drawNext();
+    drawHold();
+  }
+
+  window.addEventListener('resize', () => { resizeAll(); });
+
+  // ---------------------------
+  // Draw functions (respect blinkRows & blinkVisible)
+  function draw(){
+    // clear board bg
+    boardCtx.clearRect(0,0,boardCanvas.width,boardCanvas.height);
+    boardCtx.fillStyle = '#d7efcc';
+    boardCtx.fillRect(0,0,boardCanvas.width / DPR, boardCanvas.height / DPR);
+
+    // draw grid + placed blocks (skip blink rows when invisible)
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const t = board[r][c];
+        if(t){
+          // if this row is in blinkRows and currently invisible, skip drawing block
+          if(animating && blinkRows.includes(r) && !blinkVisible) {
+            // draw empty / nothing
+            boardCtx.strokeStyle = 'rgba(0,0,0,0.03)';
+            boardCtx.strokeRect(c*CELL, r*CELL, CELL, CELL);
+            continue;
+          }
+          drawCell(c,r,COLORS[t]);
+        } else {
+          boardCtx.strokeStyle = 'rgba(0,0,0,0.03)';
+          boardCtx.strokeRect(c*CELL, r*CELL, CELL, CELL);
+        }
+      }
+    }
+
+    // draw current piece (if not animating lines that would conflict)
+    if(current){
+      const shape = getShape(current.type, current.rot);
+      for(const [sx,sy] of shape){
+        const x = current.x + sx;
+        const y = current.y + sy;
+        if(y >= 0){
+          drawCell(x,y,COLORS[current.type]);
+        }
+      }
     }
   }
 
+  function drawCell(x,y,color){
+    const px = x * CELL, py = y * CELL;
+    boardCtx.fillStyle = color;
+    boardCtx.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+    boardCtx.fillStyle = 'rgba(255,255,255,0.12)';
+    boardCtx.fillRect(px + Math.max(2,CELL*0.15), py + Math.max(2,CELL*0.12), Math.max(4, CELL/2), Math.max(2, CELL/6));
+    boardCtx.strokeStyle = 'rgba(0,0,0,0.18)';
+    boardCtx.strokeRect(px + 1, py + 1, CELL - 2, CELL - 2);
+  }
+
+  function drawNext(){
+    nextCtx.clearRect(0,0,nextCanvas.width,nextCanvas.height);
+    if(!next) return;
+    const size = 18;
+    const midx = nextCanvas.width / DPR / 2;
+    const midy = nextCanvas.height / DPR / 2;
+    const shape = getShape(next.type, 0);
+    for(const [sx,sy] of shape){
+      const x = midx + sx * size;
+      const y = midy + sy * size;
+      nextCtx.fillStyle = COLORS[next.type];
+      nextCtx.fillRect(x - 6, y - 6, 12, 12);
+      nextCtx.strokeStyle = 'rgba(0,0,0,0.12)';
+      nextCtx.strokeRect(x - 6, y - 6, 12, 12);
+    }
+  }
+
+  function drawHold(){
+    holdCtx.clearRect(0,0,holdCanvas.width,holdCanvas.height);
+    if(!hold) return;
+    const size = 18;
+    const midx = holdCanvas.width / DPR / 2;
+    const midy = holdCanvas.height / DPR / 2;
+    const shape = getShape(hold.type, 0);
+    for(const [sx,sy] of shape){
+      const x = midx + sx * size;
+      const y = midy + sy * size;
+      holdCtx.fillStyle = COLORS[hold.type];
+      holdCtx.fillRect(x - 6, y - 6, 12, 12);
+      holdCtx.strokeStyle = 'rgba(0,0,0,0.12)';
+      holdCtx.strokeRect(x - 6, y - 6, 12, 12);
+    }
+  }
+
+  // ---------------------------
+  // Game flow
   function spawn(){
     current = next || randPiece();
-    current.x = 3;
+    current.x = Math.floor((COLS - 4) / 2) + 1; // center-ish
     current.y = -1;
     next = randPiece();
-    // if immediate collision, game over
-    if(collide(current, board, 0, 0, 0)){
-      gameOver();
-    }
+    canHold = true;
     drawNext();
-  }
-
-  function hardDrop(){
-    while(!collide(current, board, 0, 1, 0)){
-      current.y += 1;
-      score += 2; // optional for each cell
-    }
-    lockPiece();
+    drawHold();
+    if(collide(current, board, 0, 0, 0)) gameOver();
   }
 
   function lockPiece(){
     placePiece(current);
-    clearLines();
-    spawn();
-  }
-
-  function rotatePiece(dir=1){
-    // simple wall kick offsets
-    const offsets = [0, -1, 1, -2, 2];
-    for(const off of offsets){
-      if(!collide(current,board,off,0,dir)){
-        current.x += off;
-        current.rot = (current.rot + dir + 4) % 4;
-        return;
+    // check full lines
+    const full = [];
+    for(let r=0;r<ROWS;r++){
+      let fullLine = true;
+      for(let c=0;c<COLS;c++){
+        if(!board[r][c]) { fullLine = false; break; }
       }
+      if(fullLine) full.push(r);
     }
-    // if no offset fits, do nothing
-  }
-
-  function movePiece(dx){
-    if(!collide(current, board, dx, 0, 0)){
-      current.x += dx;
+    if(full.length > 0){
+      // start blink animation (2回点滅 => visible toggle 4 times total)
+      animateLineClear(full);
+    } else {
+      spawn();
     }
   }
 
   function softDrop(){
+    if(animating || !running || paused) return;
     if(!collide(current, board, 0, 1, 0)){
       current.y += 1;
       score += 1;
     } else {
       lockPiece();
     }
+    updateUI();
+    draw();
+  }
+
+  function hardDrop(){
+    if(animating || !running || paused) return;
+    while(!collide(current, board, 0, 1, 0)){
+      current.y += 1;
+      score += 2;
+    }
+    lockPiece();
+    updateUI();
+    draw();
+  }
+
+  function movePiece(dx){
+    if(animating || !running || paused) return;
+    if(!collide(current, board, dx, 0, 0)){
+      current.x += dx;
+      draw();
+    }
+  }
+
+  function rotatePiece(dir=1){
+    if(animating || !running || paused) return;
+    const offsets = [0, -1, 1, -2, 2];
+    for(const off of offsets){
+      if(!collide(current, board, off, 0, dir)){
+        current.x += off;
+        current.rot = (current.rot + dir + 4) % 4;
+        draw();
+        return;
+      }
+    }
+  }
+
+  // Hold implementation: one swap per lock
+  function holdPiece(){
+    if(animating || !running || paused) return;
+    if(!canHold) return;
+    if(!hold){
+      hold = { type: current.type };
+      // bring next into current
+      current = next;
+      next = randPiece();
+      current.x = Math.floor((COLS - 4) / 2) + 1;
+      current.y = -1;
+      current.rot = 0;
+      if(collide(current, board, 0, 0, 0)) gameOver();
+    } else {
+      // swap current.type and hold.type
+      const tmp = hold.type;
+      hold.type = current.type;
+      current = { type: tmp, rot:0, x: Math.floor((COLS - 4) / 2) + 1, y: -1 };
+      if(collide(current, board, 0, 0, 0)) gameOver();
+    }
+    canHold = false;
+    drawNext(); drawHold(); draw();
+  }
+
+  function animateLineClear(rows){
+    animating = true;
+    blinkRows = rows.slice().sort((a,b)=>a-b); // ascending
+    blinkVisible = true;
+    let toggles = 0;
+    const maxToggles = 4; // 4 toggles => 2 full flashes (visible->invisible->visible->invisible->then finish visible and remove)
+    const interval = 220;
+    const tid = setInterval(()=>{
+      blinkVisible = !blinkVisible;
+      draw();
+      toggles++;
+      if(toggles >= maxToggles){
+        clearInterval(tid);
+        // actually remove rows
+        // remove from board (higher rows come down)
+        // remove each row index in blinkRows (they are original indices). Since we remove from board, adjust offsets.
+        for(const rIndex of blinkRows.slice().sort((a,b)=>b-a)){ // remove from bottom to top
+          board.splice(rIndex, 1);
+          board.unshift(new Array(COLS).fill(null));
+        }
+        // scoring
+        const cleared = blinkRows.length;
+        const points = [0,40,100,300,1200];
+        score += (points[cleared] * level);
+        lines += cleared;
+        level = Math.floor(lines/10) + 1;
+        dropInterval = Math.max(80, 800 - (level-1)*60);
+        updateUI();
+        // reset animation state and spawn
+        animating = false;
+        blinkRows = [];
+        blinkVisible = true;
+        spawn();
+        draw();
+      }
+    }, interval);
   }
 
   function updateUI(){
-    document.getElementById('score').textContent = score;
-    document.getElementById('lines').textContent = lines;
-    document.getElementById('level').textContent = level;
+    scoreEl.textContent = score;
+    linesEl.textContent = lines;
+    levelEl.textContent = level;
   }
 
   function gameOver(){
     running = false;
     paused = false;
     alert('Game Over! Score: ' + score);
-    // reset
+    // reset state
     board = createEmptyBoard();
     score = 0; lines = 0; level = 1;
     dropInterval = 800;
     next = randPiece();
-    spawn();
+    current = null;
+    hold = null;
+    canHold = true;
     updateUI();
-    running = false;
+    drawNext(); drawHold(); draw();
   }
 
+  // ---------------------------
+  // main loop
+  function loop(now = performance.now()){
+    if(!running || paused) return;
+    const delta = now - lastTime;
+    lastTime = now;
+    if(!animating){
+      dropCounter += delta;
+      if(dropCounter > dropInterval){
+        if(!collide(current, board, 0, 1, 0)){
+          current.y += 1;
+        } else {
+          lockPiece();
+        }
+        dropCounter = 0;
+      }
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ---------------------------
+  // Controls wiring
+  document.getElementById('startBtn').addEventListener('click', ()=>{ if(!running){ start(); } });
+  document.getElementById('pauseBtn').addEventListener('click', ()=>{ togglePause(); });
+  document.getElementById('restartBtn').addEventListener('click', ()=>{ restart(); });
+  document.getElementById('holdBtn').addEventListener('click', ()=>{ holdPiece(); });
+
+  // touch controls helpers (support hold/longpress)
+  function addTouch(id, fn){
+    const el = document.getElementById(id);
+    if(!el) return;
+    let timer = null;
+    let held = false;
+    const onStart = e => { e.preventDefault(); if(animating || !running || paused) return; held = true; fn(); timer = setInterval(()=>{ if(held) fn(); }, 160); };
+    const onEnd = e => { held = false; clearInterval(timer); };
+    el.addEventListener('touchstart', onStart, {passive:false});
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('touchcancel', onEnd);
+    el.addEventListener('mousedown', e=>{ e.preventDefault(); onStart(e); });
+    el.addEventListener('mouseup', onEnd);
+  }
+
+  addTouch('t-left', ()=>{ movePiece(-1); });
+  addTouch('t-right', ()=>{ movePiece(1); });
+  addTouch('t-down', ()=>{ softDrop(); });
+  addTouch('t-rotate', ()=>{ rotatePiece(1); });
+  addTouch('t-hard', ()=>{ hardDrop(); });
+  addTouch('t-hold', ()=>{ holdPiece(); });
+
+  // keyboard
+  window.addEventListener('keydown', e=>{
+    if(e.repeat) return;
+    if(!running && e.code === 'Enter') start();
+    if(e.code === 'ArrowLeft') { movePiece(-1); }
+    else if(e.code === 'ArrowRight') { movePiece(1); }
+    else if(e.code === 'ArrowUp') { rotatePiece(1); }
+    else if(e.code === 'ArrowDown') { softDrop(); }
+    else if(e.code === 'Space') { e.preventDefault(); hardDrop(); }
+    else if(e.code === 'KeyP') { togglePause(); }
+    else if(e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyC') { holdPiece(); }
+  });
+
+  // mouse buttons for desktop small controls: allow click-and-hold repeating
+  ['leftBtn','rightBtn','rotateBtn','softBtn','hardBtn'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    let intv=null, down=false;
+    el.addEventListener('mousedown', e=>{ e.preventDefault(); down=true; el.classList.add('active'); const handler = (()=>{ if(id==='leftBtn') movePiece(-1); else if(id==='rightBtn') movePiece(1); else if(id==='rotateBtn') rotatePiece(1); else if(id==='softBtn') softDrop(); else if(id==='hardBtn') hardDrop(); }); handler(); intv=setInterval(handler,160); });
+    window.addEventListener('mouseup', e=>{ down=false; clearInterval(intv); el.classList.remove('active'); });
+  });
+
+  // But desktop extra buttons might not exist in new layout; create fallback invisible ones if needed
+  // (none required; we provided main controls)
+
+  // ---------------------------
+  // Game control helpers
   function start(){
     if(running) return;
     running = true;
     paused = false;
-    lastTime = performance.now();
     if(!next) next = randPiece();
     if(!current) spawn();
-    loop();
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
   }
   function restart(){
     board = createEmptyBoard();
@@ -407,173 +646,46 @@
     dropInterval = 800;
     running = true; paused = false;
     next = randPiece();
+    current = null; hold = null; canHold = true;
+    updateUI();
     spawn();
     lastTime = performance.now();
-    updateUI();
-    loop();
-  }
-  function pauseToggle(){
-    paused = !paused;
-    if(!paused) {
-      lastTime = performance.now();
-      loop();
-    }
-  }
-
-  function loop(now=performance.now()){
-    if(!running || paused) return;
-    const delta = now - lastTime;
-    lastTime = now;
-    dropCounter += delta;
-    if(dropCounter > dropInterval){
-      // automatic drop
-      if(!collide(current, board, 0, 1, 0)){
-        current.y += 1;
-      } else {
-        lockPiece();
-      }
-      dropCounter = 0;
-    }
-    draw();
     requestAnimationFrame(loop);
   }
-
-  function draw(){
-    // clear
-    ctx.clearRect(0,0,boardCanvas.width,boardCanvas.height);
-    // draw grid bg
-    ctx.fillStyle = '#d7efcc';
-    ctx.fillRect(0,0,boardCanvas.width,boardCanvas.height);
-
-    // draw placed blocks
-    for(let r=0;r<ROWS;r++){
-      for(let c=0;c<COLS;c++){
-        const t = board[r][c];
-        if(t){
-          drawCell(c,r,COLORS[t]);
-        } else {
-          // subtle grid lines
-          ctx.strokeStyle = 'rgba(0,0,0,0.03)';
-          ctx.strokeRect(c*CELL, r*CELL, CELL, CELL);
-        }
-      }
-    }
-    // draw current piece
-    if(current){
-      const shape = PIECES[current.type][current.rot];
-      for(const [sx,sy] of shape){
-        const x = current.x + sx;
-        const y = current.y + sy;
-        if(y >= 0){
-          drawCell(x,y,COLORS[current.type], true);
-        }
-      }
+  function togglePause(){
+    if(!running) return;
+    paused = !paused;
+    if(!paused){
+      lastTime = performance.now();
+      requestAnimationFrame(loop);
     }
   }
 
-  function drawCell(x,y,color, highlight=false){
-    const px = x*CELL, py = y*CELL;
-    // main
-    ctx.fillStyle = color;
-    ctx.fillRect(px+1, py+1, CELL-2, CELL-2);
-    // slight shading
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(px+3, py+3, CELL/2, CELL/6);
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-    ctx.strokeRect(px+1,py+1,CELL-2,CELL-2);
-  }
-
-  function drawNext(){
-    nctx.clearRect(0,0,nextCanvas.width,nextCanvas.height);
-    nctx.fillStyle = 'transparent';
-    nctx.fillRect(0,0,nextCanvas.width,nextCanvas.height);
-    if(!next) return;
-    const size = 16;
-    const midx = nextCanvas.width/2;
-    const midy = nextCanvas.height/2;
-    const shape = PIECES[next.type][0];
-    for(const [sx,sy] of shape){
-      const x = midx + sx*size;
-      const y = midy + sy*size;
-      nctx.fillStyle = COLORS[next.type];
-      nctx.fillRect(x-6,y-6,12,12);
-      nctx.strokeStyle = 'rgba(0,0,0,0.12)';
-      nctx.strokeRect(x-6,y-6,12,12);
-    }
-  }
-
-  // Keyboard handling
-  const keyState = {};
-  window.addEventListener('keydown', e=>{
-    if(e.repeat) return;
-    const key = e.code;
-    if(key === 'ArrowLeft'){ movePiece(-1); draw(); }
-    else if(key === 'ArrowRight'){ movePiece(1); draw(); }
-    else if(key === 'ArrowUp'){ rotatePiece(1); draw(); }
-    else if(key === 'ArrowDown'){ softDrop(); draw(); }
-    else if(key === 'Space'){ e.preventDefault(); hardDrop(); draw(); }
-    else if(key === 'KeyP'){ pauseToggle(); }
-    else if(key === 'Enter'){ start(); }
-  });
-
-  // Buttons (desktop visible)
-  document.getElementById('startBtn').addEventListener('click', ()=>start());
-  document.getElementById('pauseBtn').addEventListener('click', ()=>{ pauseToggle(); });
-  document.getElementById('restartBtn').addEventListener('click', ()=>{ restart(); });
-  document.getElementById('leftBtn').addEventListener('click', ()=>{ movePiece(-1); draw(); });
-  document.getElementById('rightBtn').addEventListener('click', ()=>{ movePiece(1); draw(); });
-  document.getElementById('rotateBtn').addEventListener('click', ()=>{ rotatePiece(1); draw(); });
-  document.getElementById('softBtn').addEventListener('click', ()=>{ softDrop(); draw(); });
-  document.getElementById('hardBtn').addEventListener('click', ()=>{ hardDrop(); draw(); });
-
-  // Touch controls (mobile)
-  const addTouch = (id, fn) => {
-    const el = document.getElementById(id);
-    let timer = null;
-    let held = false;
-    const onStart = e => {
-      e.preventDefault();
-      held = true;
-      fn();
-      // for hold behavior on down (soft drop)
-      timer = setInterval(()=>{ if(held) fn(); }, 150);
-    };
-    const onEnd = e => { held = false; clearInterval(timer); };
-    el.addEventListener('touchstart', onStart);
-    el.addEventListener('touchend', onEnd);
-    el.addEventListener('touchcancel', onEnd);
-    el.addEventListener('mousedown', e=>{ e.preventDefault(); onStart(e); });
-    el.addEventListener('mouseup', e=>{ onEnd(e); });
-  };
-  addTouch('t-left', ()=>{ movePiece(-1); draw(); });
-  addTouch('t-right', ()=>{ movePiece(1); draw(); });
-  addTouch('t-down', ()=>{ softDrop(); draw(); });
-  addTouch('t-rotate', ()=>{ rotatePiece(1); draw(); });
-  addTouch('t-hard', ()=>{ hardDrop(); draw(); });
-
+  // ---------------------------
   // initial setup
-  next = randPiece();
-  spawn();
-  updateUI();
-  drawNext();
-  draw();
+  function init(){
+    // ensure some visible on-screen control for desktop quick actions (optional)
+    // create some small control buttons in side if user agent is desktop (we already have start/pause/restart/hold)
+    // set initial pieces
+    next = randPiece();
+    resizeAll();
+    spawn();
+    updateUI();
+    drawNext();
+    drawHold();
+    draw();
 
-  // auto-scale canvas for crisp pixel look on HiDPI
-  function fixDPI(){
-    const ratio = window.devicePixelRatio || 1;
-    [boardCanvas, nextCanvas].forEach(c=>{
-      const w = c.width;
-      const h = c.height;
-      c.width = w * ratio;
-      c.height = h * ratio;
-      c.style.width = (w / ratio) + 'px';
-      c.style.height = (h / ratio) + 'px';
-      const context = c.getContext('2d');
-      context.setTransform(ratio,0,0,ratio,0,0);
-    });
+    // auto-start so mobile gets automatic drop
+    start();
   }
-  fixDPI();
-  window.addEventListener('resize', fixDPI);
+
+  // ensure DOM layout settled
+  window.requestAnimationFrame(()=>{ init(); });
+
+  // Prevent scrolling when touching controls
+  ['touchstart','touchmove'].forEach(ev=>{
+    document.getElementById('touchs').addEventListener(ev, e=>{ e.preventDefault(); }, {passive:false});
+  });
 
 })();
 </script>
